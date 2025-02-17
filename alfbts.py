@@ -1,4 +1,4 @@
-import chardet,hashlib,io,numpy,os,random,re,time,tkinter,turtle
+import chardet,hashlib,io,numpy,os,random,re,threading,time,tkinter,turtle
 from tkinter import filedialog,messagebox,ttk
 from PIL import Image
 pro_lst5=[0.006]*73+[0.06*i+0.006 for i in range(16)]+[1]
@@ -29,9 +29,9 @@ icc=('r27l213br26l22r24l24l12l22r24l22r24l22el111l23br22l24l12l24er28r13br22'
 class Alfbts:
     def __init__(self):
         self.rt=tkinter.Tk(); self.adcon(); self.admnu(); self.prefn()
-        self.rt.iconbitmap('Na.ico'); self.rt.geometry('960x540')
+        self.rt.iconphoto(True,tkinter.PhotoImage(file='Na.png'))
         self.rt.title('自制小工具集合 By——红石社Deiloproxide')
-        self.ico(); self.rt.mainloop()
+        self.rt.geometry('960x540'); self.ico(); self.rt.mainloop()
     def adcon(self):
         self.ls=ttk.Treeview(self.rt,columns=('opt',),show='tree')
         self.slb=tkinter.Scrollbar(self.rt); self.cvs=tkinter.Canvas(self.rt)
@@ -45,18 +45,19 @@ class Alfbts:
         self.mnu.add_cascade(label=lbl,menu=mntmp)
         for i in knd: mntmp.add_command(label=i,command=knd[i])
     def admnu(self):
-        self.clr={'black':30,'red':31,'green':32,'yellow':33,'blue':34,
-                  'purple':35,'cyan':36,'grey':37,'white':38}
-        self.funknd={'文件':{'清空':self.clear,'图标':self.ico,
-                        '库检测':self.lbdet,'退出':lambda: self.winqut(self.rt)},
-                     '算法':{'同分异构体数量':self.iso,'链表冒泡排序':self.lnksrt,
-                        '最大环长度':self.ring,'求解罗马数字':self.rome},
-                     '批处理':{'补齐缺失后缀':self.adlsnd,'图片颜色替换':self.clrplc,
-                        '图片排序':self.imgsrt,'图片加解密':self.picpt,
-                        '生成组合字符':lambda: self.txmng(self.rndchr),
-                        '解unicode':lambda: self.txmng(self.ucd),'视频重命名':self.vdornm},
-                     '功能':{'抽卡模拟器':self.conpuw,'圣遗物强化':self.itsth,
-                        '迷宫可视化':self.mazepl,'抽卡概率计算':self.pulpro}}
+        self.clr={'black','red','green','yellow','blue','purple','cyan','grey','white'}
+        self.funknd={
+        '文件(F)':{'清空':self.clear,'图标':self.ico,'库检测':lambda: self.thr(self.lbdet),
+            '退出':lambda: self.winqut(self.rt)},
+        '算法(A)':{'同分异构体数量':lambda: self.thr(self.iso),
+            '链表冒泡排序':lambda: self.thr(self.lnksrt),'最大环长度':lambda: self.thr(self.ring),
+            '求解罗马数字':lambda: self.thr(self.rome)},
+        '批处理(B)':{'补齐缺失后缀':lambda: self.thr(self.adlsnd),
+            '图片颜色替换':lambda: self.thr(self.clrplc),'图片排序':lambda: self.thr(self.imgsrt),
+            '图片加解密':lambda: self.thr(self.picpt),'生成组合字符':lambda: self.txmng(self.rndchr),
+            '解unicode':lambda: self.txmng(self.ucd),'视频重命名':lambda: self.thr(self.vdornm)},
+        '功能(T)':{'抽卡模拟器':self.conpuw,'圣遗物强化':self.itsth,'迷宫可视化':self.mazepl,
+            '抽卡概率计算':lambda: self.thr(self.pulpro)}}
         self.mnu=tkinter.Menu(self.rt)
         for i in self.clr: self.ls.tag_configure(i,foreground=i)
         for i in self.funknd: self.adfun(i,self.funknd[i])
@@ -64,17 +65,20 @@ class Alfbts:
     def adlsnd(self):
         self.show(self.ls,'I.initialize','cyan')
         self.pth=self.dlg(0,'文件夹选择',('Text files','*.txt'))
+        if not self.pth: return
         fnames=[i for i in os.listdir(self.pth) if tp.isfile(self.pnm(i))]
         names=[i for i in fnames if not tp.splitext(i)[1]]
-        self.show(self.ls,'II.convert','cyan'); self.show(self.ls,'details:','cyan')
-        for name in names:
-            nm=self.pnm(name); fl=open(nm,'rb'); hd=fl.read(32); fl.close()
-            for i in hdnms:
-                if i in hd:
-                    self.show(self.ls,f"{name} -> {name+hdnms[i]}",'cyan')
-                    os.rename(nm,nm+hdnms[i]); break
-            else: self.show(self.ls,f'unknown file type: {name}','red')
+        self.show(self.ls,'II.convert','cyan'); lnm=len(names)
+        if names: self.pginit('查找添加缺失后缀',lnm)
+        for i in range(lnm):
+            nm=self.pnm(names[i]); fl=open(nm,'rb'); hd=fl.read(32); fl.close()
+            for j in hdnms:
+                if j in hd:
+                    self.pgu(i+1,f"{name} -> {name+hdnms[j]}",'cyan')
+                    os.rename(nm,nm+hdnms[j]); break
+            else: self.pgu(i+1,f'unknown file type: {name}','red')
         self.show(self.ls,'successful!','red')
+        self.rt.after(1000); self.winqut(self.pgm,ask=False)
     def adups(self,i,n):
         if i in self.ups: messagebox.showwarning('选择角色重复','请重新选择')
         else: self.ups[n]=i; self.show(self.et,f'角色{i}添加成功!','red')
@@ -84,7 +88,9 @@ class Alfbts:
     def clear(self): self.ls.delete(*self.ls.get_children())
     def clrplc(self):
         self.show(self.ls,'I.initialize','cyan')
-        pic=Image.open(self.dlg(1,'图片文件选择',('All image files','*.*')))
+        pnm=self.dlg(1,'图片文件选择',('All image files','*.*'))
+        if not pnm: return
+        pic=Image.open(pnm)
         fm=lambda cl: (int(cl[:2],16),int(cl[2:4],16),int(cl[4:],16))
         nclr=list(map(fm,self.lmd('输入多个被替换颜色(16进制表示)').split()))
         clr=fm(self.lmd('输入替换颜色(16进制表示)'))
@@ -92,11 +98,12 @@ class Alfbts:
         for i in nclr: alc=(pix[:,:,:3]==i).all(axis=-1); pix[alc,:3]=clr
         self.show(self.ls,'IV.save','cyan'); pic=Image.fromarray(pix)
         new=self.dlg(2,'图片文件保存',('Image files','*.png'))
+        if not new: return
         if new.endswith('.png'): pic.save(new)
         else: pic.save(f'{new}.png')
         self.show(self.ls,'successful!','red')
     def conpuw(self):
-        self.pu=tkinter.Toplevel(self.rt); self.pu.iconbitmap('Na.ico')
+        self.pu=tkinter.Toplevel(self.rt)
         self.pu.title('抽卡模拟器'); self.pu.geometry('400x450')
         self.pum=tkinter.Menu(self.pu); self.pu.config(menu=self.pum)
         self.ups5=tkinter.Menu(self.pum,tearoff=0)
@@ -220,24 +227,27 @@ class Alfbts:
             if icc[i].isdigit(): dig+=icc[i]
             else: cmd(dig); dig,cmd='',cmds[icc[i]]
             i+=1
-        cmd(dig); time.sleep(1); self.cvs.pack_forget(); self.tl.reset(); self.tl.ht()
+        cmd(dig); self.rt.after(1000); self.cvs.pack_forget(); self.tl.reset(); self.tl.ht()
         self.slb.pack(side='right',fill='y'); self.ls.pack(fill='both',expand=True)
     def imgsrt(self):
         self.show(self.ls,'I.initialize','cyan')
         self.pth=self.dlg(0,'文件夹选择',('Text files','*.txt'))
+        if not self.pth: return
         self.show(self.ls,'II.image sort(maybe long time)','cyan')
         names=[i for i in os.listdir(self.pth) if i.lower().endswith('.png')]
-        ln=range(len(names)); self.show(self.ls,'details:','cyan')
-        msg=lambda tx,x: self.show(self.ls,f'已{tx}{x+1}/{len(names)}','cyan')
-        pis=[[numpy.array(Image.open(self.pnm(names[i])))[:,:3],msg('转换',i)] for i in ln]
-        sort=[[numpy.mean(pis[i][0]),names[i],msg('完成',i)] for i in ln]
+        ln=len(names); lnr=range(ln); self.pginit('图片排序',ln)
+        msg=lambda tx,x: self.pgu(x+1,f'已{tx}{x+1}/{len(names)}','cyan')
+        pis=[[numpy.array(Image.open(self.pnm(names[i])))[:,:3],msg('转换',i)] for i in lnr]
+        self.rt.after(1000); self.winqut(self.pgm,ask=False); self.pginit('图片排序',ln)
+        sort=[[numpy.mean(pis[i][0]),names[i],msg('完成',i)] for i in lnr]
+        self.rt.after(1000); self.winqut(self.pgm,ask=False)
         sort=sorted(sort,key=lambda i:i[0]); self.show(self.ls,'III.uniform','cyan')
-        for i in ln: os.rename(self.pnm(sort[i][1]),self.pnm(f'pix{i:04d}.png'))
+        for i in lnr: os.rename(self.pnm(sort[i][1]),self.pnm(f'pix{i:04d}.png'))
         names=[i for i in os.listdir(self.pth) if i.lower().endswith('.png')]
-        for i in ln: os.rename(self.pnm(names[i]),self.pnm(f'pic{i:04d}.png'))
+        for i in lnr: os.rename(self.pnm(names[i]),self.pnm(f'pic{i:04d}.png'))
         self.show(self.ls,'successful!','red')
     def inp(self,st,tx,ab,tx1,tx2,cmd1,cmd2):
-        self.tmp=tkinter.Toplevel(); self.tmp.iconbitmap('Na.ico')
+        self.tmp=tkinter.Toplevel(self.rt)
         self.tmp.title(''); self.tmp.geometry('220x100')
         self.lb=tkinter.Label(self.tmp,text=st)
         self.etr=tkinter.Entry(self.tmp); self.etr.insert('end',tx)
@@ -263,7 +273,7 @@ class Alfbts:
             hm[isol],isol=res,isol+1
         self.show(self.ls,f'{hm[n]}','green')
     def itsth(self):
-        self.it=tkinter.Toplevel(self.rt); self.it.iconbitmap('Na.ico')
+        self.it=tkinter.Toplevel(self.rt)
         self.it.title('圣遗物强化'); self.it.geometry('400x450')
         self.lb=tkinter.Label(self.it,text='强化结果:')
         self.et=ttk.Treeview(self.it,columns=('opt',),show='tree')
@@ -309,7 +319,7 @@ class Alfbts:
                 p,q,r=r,p,arr[r][1]
         self.show(self.ls,f'{arr},head={hd}','green')
     def mazepl(self):
-        self.mz=tkinter.Toplevel(self.rt); self.mz.iconbitmap('Na.ico')
+        self.mz=tkinter.Toplevel(self.rt)
         self.mz.title('迷宫可视化'); self.mz.geometry('300x100')
         self.lb=tkinter.Label(self.mz,text='迷宫设置')
         self.emp=tkinter.Frame(self.mz)
@@ -336,13 +346,28 @@ class Alfbts:
             self.tl.fd((rx-lx)*self.sz); self.tl.lt(90)
             self.tl.fd((ry-ly)*self.sz); self.tl.lt(90)
         self.tl.end_fill()
+    def pginit(self,tx,tol):
+        self.pgm=tkinter.Toplevel(self.rt); self.pgm.title(tx);
+        self.pgm.geometry('400x250'); self.pgb=ttk.Progressbar(self.pgm)
+        self.pgsb=tkinter.Scrollbar(self.pgm)
+        self.pgt=ttk.Treeview(self.pgm,columns=('opt',),show='tree')
+        self.pgt.column("#0",width=0,stretch=False)
+        self.pgt.column('opt',width=200,anchor='w')
+        self.pgt.config(yscrollcommand=self.pgsb.set)
+        self.pgsb.config(command=self.pgt.yview)
+        for i in self.clr: self.pgt.tag_configure(i,foreground=i)
+        self.pgb['maximum']=tol; self.pgb.config(length=350); self.pgb.pack()
+        self.pgsb.pack(side='right',fill='y'); self.pgt.pack(fill='both',expand=True)
+    def pgu(self,num,tx,clr): self.pgb['value']=num; self.show(self.pgt,tx,clr)
     def picpt(self):
         self.show(self.ls,'I.open image','cyan')
         fl=self.dlg(1,'图片文件选择',('All image files','*.*'))
+        if not fl: return
         pic=Image.open(fl); pix,h,w=numpy.array(pic),pic.height,pic.width
         self.show(self.ls,'II.gen hash mask','cyan'); ln=len(pix[0,0])
         licc,lictmp,hdgl,hsh=len(icc),0,64,hashlib.sha256()
         immsk=numpy.zeros_like(pix); self.show(self.ls,'III.image encrypt','cyan')
+        self.pginit('图片加密',h)
         for i in range(h):
             for j in range(w):
                 for k in range(ln):
@@ -350,9 +375,12 @@ class Alfbts:
                         hdgl=0; hsh.update(icc[lictmp%licc].encode())
                         lictmp+=1; hdg=hsh.hexdigest()
                     immsk[i,j,k]=int(hdg[hdgl:hdgl+2],16); hdgl+=2
+            self.pgu(i+1,f'已加密{i+1}/{h}','cyan')
         pic=Image.fromarray(numpy.bitwise_xor(pix,immsk))
+        self.winqut(self.pgm,ask=False)
         self.show(self.ls,'IV.save','cyan')
         new=self.dlg(2,'图片文件保存',('Image files','.png'))
+        if not new: return
         if new.endswith('.png'): pic.save(new)
         else: pic.save(f'{new}.png')
         self.show(self.ls,'successful!','red')
@@ -400,7 +428,7 @@ class Alfbts:
         pb=int(self.lmd('粉球数')); put=int(self.lmd('垫池数(0-89)'))
         fu,tu=int(self.lmd('已经连歪数')),int(self.lmd('是否大保底(0/1)'))
         _len,st,ed=0,0,50; pb+=s//160; lst[_len]=[0,put,fu,tu]
-        proes[_len]=1; _len+=1
+        proes[_len]=1; _len+=1; self.pginit('抽卡模拟',pb)
         for i in range(pb):
             for j in range(_len):
                 ups,puts,false_up,true_up=lst[j]; pro=proes[j]
@@ -411,19 +439,21 @@ class Alfbts:
                     dic[ups,0,false_up+1,1]+=pro*pros*(1-tu_pro)
                     dic[ups+1,0,0,0]+=pro*pros*tu_pro
             _len=0
-            for i in range(52):
-                for j in range(90):
+            for j in range(52):
+                for t in range(90):
                     for p in range(4):
                         for k in range(2):
-                            if dic[i,j,p,k]!=0:
-                                lst[_len]=[i,j,p,k]; proes[_len]=dic[i,j,p,k]
-                                _len+=1; dic[i,j,p,k]=0
+                            if dic[j,t,p,k]!=0:
+                                lst[_len]=[j,t,p,k]; proes[_len]=dic[j,t,p,k]
+                                _len+=1; dic[j,t,p,k]=0
+            self.pgu(i+1,f'已完成{i+1}抽','cyan')
         for i in range(_len): res[lst[i,0]]+=proes[i]*100
         for i in range(ed+1):
             if res[i]>0.1: st=i; break
         for i in range(ed,0,-1):
             if res[i]<0.1: res[i-1]+=res[i]
             else: ed=i; break
+        self.winqut(self.pgm,ask=False)
         self.show(self.ls,'UP数 概率','purple')
         for i in range(st,ed+1): self.show(self.ls,f'{i:>2d}{res[i]:7.2f}%','purple')
     def putvar(self,val): self.var=val; self.tmp.destroy()
@@ -449,9 +479,9 @@ class Alfbts:
         for i in ch:
             while top>0 and dic[i]>stk[top-1]: top-=1; num-=stk[top]
             stk[top]=dic[i]; top+=1
-        while top>0: top-=1; num+=stk[top]; self.show(self.ls,f'{num}','green')
+        while top>0: top-=1; num+=stk[top]
+        self.show(self.ls,f'{num}','green')
     def show(self,arg,st,cl):
-        print(f'\033[1;{self.clr[cl]}m{st}')
         itm=arg.insert('','end',values=(st,),tags=(cl,)); arg.see(itm)
     def slv(self):
         self.btn4.config(state='disabled'); self.btn5.config(state='disabled')
@@ -471,12 +501,15 @@ class Alfbts:
             if not self.maze[x+tmp[i][0]*2][y+tmp[i][1]*2]: stk[top][2]=i+1; continue
             top+=1; stk[top]=[x+tmp[i][0]*2,y+tmp[i][1]*2,0]
         self.btn4.config(state='normal')
+    @staticmethod
+    def thr(fun): tsk=threading.Thread(target=fun); tsk.start()
     def txmng(self,fun):
         self.show(self.ls,'I.input','cyan'); self.istm=io.StringIO()
         if self.inp('打开方式','',False,'文本输入','文件打开',self.tru,self.fls):
             self.istm.write(self.lmd('输入你的文本'))
         else:
             fl=open(self.dlg(1,'文本文件选择',('All text files','*.*')),'rb')
+            if not fl: return
             data=fl.read(1024); enc=chardet.detect(data)['encoding']
             fl.seek(0); data=fl.readline()
             while data: self.istm.write(data.decode(enc)); data=fl.readline()
@@ -484,12 +517,11 @@ class Alfbts:
         if self.inp('保存方式','',False,'文本输出','文件保存',self.tru,self.fls):
             self.ostm=io.BytesIO(); self.istm.seek(0);
             fun(); self.ostm.seek(0); val=self.ostm.getvalue().decode('utf-8')
-            self.show(self.ls,val,'cyan')
             self.inp('生成结果',val,True,'全选','确认',self.scl,self.getvar)
         else:
             new=self.dlg(2,'文本文件保存',('All text files','*.*'))
-            self.ostm=io.FileIO(new,'w'); self.istm.seek(0)
-            fun(); self.ostm.seek(0)
+            if not new: return
+            self.ostm=io.FileIO(new,'w'); self.istm.seek(0); fun(); self.ostm.seek(0)
         self.istm.close(); self.ostm.close()
         self.show(self.ls,'successful!','red')
     def ucd(self):
@@ -515,16 +547,19 @@ class Alfbts:
     def vdornm(self):
         self.show(self.ls,'I.get movie folder','cyan')
         self.pth=self.dlg(0,'文件夹选择',('Text files','*.txt'))
-        names=os.listdir(self.pth)
-        self.show(self.ls,'II.rename movies','cyan'); self.show(self.ls,'details:','cyan')
-        for name in names:
-            if name[-3:] in ['mp4','MP4']:
-                t=time.localtime(tp.getctime(self.pnm(name)))
-                new=f'{time.strftime("%Y%m%d_%H%M%S",t)}A.mp4'
-                self.show(self.ls,f'{name} -> {new}','cyan')
-                os.rename(self.pnm(name),self.pnm(new))
+        if not self.pth: return
+        names=[i for i in os.listdir(self.pth) if i.lower().endswith('.mp4')]
+        self.show(self.ls,'II.rename movies','cyan'); lnms=len(names)
+        if names: self.pginit('视频重命名',lnms)
+        for i in range(lnms):
+            t=time.localtime(tp.getctime(self.pnm(names[i])))
+            new=f'{time.strftime("%Y%m%d_%H%M%S",t)}A.mp4'
+            self.pgu(i+1,f'{names[i]} -> {new}','cyan')
+            os.rename(self.pnm(names[i]),self.pnm(new))
+        self.rt.after(1000); self.winqut(self.pgm,ask=False)
         self.show(self.ls,'successful!','red')
     @staticmethod
-    def winqut(tlk):
-        if messagebox.askokcancel('退出','确认退出?'): tlk.destroy()
+    def winqut(tlk,ask=True):
+        if not ask: tlk.destroy()
+        elif messagebox.askokcancel('退出','确认退出?'): tlk.destroy()
 if __name__=='__main__': alfbts=Alfbts()
