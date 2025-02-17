@@ -51,3 +51,12 @@ A simple python toolchest of algorithms, file-batches and functions
 pulchrlibs.txt中存储了相关角色信息，
 如果要实现崩铁或绝区零的卡池，请自行修改
 
+#2025-02-16modified
+//新增特色功能：
+
+不想等待程序无响应？正好！
+我们对于部分功能使用了进度条，
+保证您等待的体验
+
+新增了预编译的二进制文件，
+Windows，macOS，Linux，压缩包的都有
