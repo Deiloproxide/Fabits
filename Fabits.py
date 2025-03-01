@@ -26,7 +26,7 @@ icc=('r27l213br26l22r24l24l12l22r24l22r24l22el111l23br22l24l12l24er28r13br22'
      'l22r24l23r22r12l12l27l12l23r24l23r22r17r26l22l16r111r24l22r24l22l14r12'
      'l23r13l227el14l215br26l22l16l22el32r22bl23r22r13l12l25l16l25l12el27l17'
      'br12l12l22l12el28l11bl34r12l12l22r24r12l12l27l12l23r24r12l12l22r24l22e')
-class Alfbts:
+class Fabits:
     def __init__(self):
         self.rt=tkinter.Tk(); self.adcon(); self.admnu(); self.prefn()
         self.rt.iconphoto(True,tkinter.PhotoImage(file='Na.png'))
@@ -562,4 +562,4 @@ class Alfbts:
     def winqut(tlk,ask=True):
         if not ask: tlk.destroy()
         elif messagebox.askokcancel('退出','确认退出?'): tlk.destroy()
-if __name__=='__main__': alfbts=Alfbts()
+if __name__=='__main__': fabits=Fabits()
