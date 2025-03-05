@@ -193,7 +193,7 @@ class Fabits:
         self.bx,self.by=map(int,self.lmd('输入迷宫起始点x,y').split())
         self.ex,self.ey=map(int,self.lmd('输入迷宫终点x,y').split())
         self.restul(); self.btn4.config(state='disabled')
-        self.sz=min(200/self.ln,200/self.wd)
+        self.sz=min(250/self.ln,250/self.wd)
         self.maze=numpy.ones(shape=(self.ln*2+1,self.wd*2+1),dtype=int)
         for i in range(self.ln*2+1):
             for j in range(self.wd*2+1):
@@ -273,7 +273,7 @@ class Fabits:
         self.memp1.pack_forget()
         self.restul(); self.cvs.pack(fill='both',expand=True)
         self.ico(icc,60,12,iter('d')); self.rt.after(500); self.restul()
-        self.tl.fd(565); self.tl.rt(90); self.tl.fd(60); self.tl.lt(135)
+        self.ico('r0114r212l30',45,5,iter('d'))
         self.ico(icd,90,22,iter('dwdwd')); self.tl.rt(45); self.tl.fd(255)
         icm1,icm2='圣·西门科技股份有限公司 出品','Sig·WestGate Tech. L.C.D. present.'
         self.tl.write(icm1,align='center',font=("TkDefaultFont",25,'bold'))
@@ -362,31 +362,25 @@ class Fabits:
                 p,q,r=r,p,arr[r][1]
         self.show(self.ls,f'{arr},head={hd}','green')
     def mazepl(self):
-        self.mz=tkinter.Toplevel(self.rt)
-        self.mz.title('迷宫可视化'); self.mz.geometry('300x100')
-        self.lb=tkinter.Label(self.mz,text='迷宫设置')
+        self.mz=tkinter.Toplevel(self.rt); self.mz.title('迷宫可视化')
+        self.mz.geometry('300x100'); self.lb=tkinter.Label(self.mz,text='迷宫设置')
         self.emp=tkinter.Frame(self.mz)
         self.btn4=tkinter.Button(self.emp,text='生成',command=self.gen)
         self.btn5=tkinter.Button(self.emp,text='解',command=self.slv)
         self.btn6=tkinter.Button(self.emp,text='退出',command=lambda: self.winqut(self.mz))
-        self.btn4.config(width=8)
-        self.btn5.config(width=8,state='disabled')
-        self.btn6.config(width=8)
-        self.ls.pack_forget(); self.slb.pack_forget()
-        self.cvs.pack(fill='both',expand=True)
-        self.lb.pack(expand=True); self.emp.pack(fill='x',expand=True)
-        self.btn4.pack(side='left',expand=True)
-        self.btn5.pack(side='left',expand=True)
-        self.btn6.pack(side='left',expand=True)
-        self.mz.grab_set(); self.mz.wait_window()
-        self.cvs.pack_forget(); self.restul()
-        self.slb.pack(side='right',fill='y'); self.ls.pack(fill='both',expand=True)
+        self.btn4.config(width=8); self.btn5.config(width=8,state='disabled')
+        self.btn6.config(width=8); self.memp1.pack_forget()
+        self.cvs.pack(fill='both',expand=True); self.lb.pack(expand=True)
+        self.emp.pack(fill='x',expand=True); self.btn4.pack(side='left',expand=True)
+        self.btn5.pack(side='left',expand=True); self.btn6.pack(side='left',expand=True)
+        self.mz.grab_set(); self.mz.wait_window(); self.cvs.pack_forget(); self.restul()
+        self.memp1.pack(side='bottom',fill='both',expand=True)
     @staticmethod
     def mb(icn,tp,tle,msg):
         mbt=tkinter.messagebox.Message(icon=mb[icn],type=mb[tp],title=tle,message=msg)
         res=mbt.show(); return res
     def mzshw(self,lx,ly,rx,ry,clr):
-        self.tl.teleport((lx-self.ln)*self.sz+280,(ly-self.wd)*self.sz-135)
+        self.tl.teleport((lx-self.ln)*self.sz+515,(ly-self.wd)*self.sz-275)
         self.tl.fillcolor(clr); self.tl.begin_fill()
         for i in range(2):
             self.tl.fd((rx-lx)*self.sz); self.tl.lt(90)
@@ -408,7 +402,7 @@ class Fabits:
                 for i in data: self.tetr.insert('insert',i.decode(enc))
                 fl.close(); self.nfl=0
                 self.rt.title(f'{til} - {self.txflnm}')
-            else: self.rt.title(f'{til} - {self.txflnm}*'); return
+            else: self.rt.title(f'{til} - {self.txflnm}'); return
         else:
             self.nfl=1; self.txflnm='未命名文件'; self.tetr.delete('1.0','end')
             if nda:

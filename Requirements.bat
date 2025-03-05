@@ -1,9 +1,5 @@
 @echo off
-chcp 65001
-pip install chardet
-pip install numpy
-pip install pillow
-pip install requests
+pip install chardet numpy pillow requests
 reg add "HKCR\.nda" /f
 reg add "HKCR\.nda" /ve /d NahidaDataAssets /f
 reg add "HKCR\NahidaDataAssets" /f
