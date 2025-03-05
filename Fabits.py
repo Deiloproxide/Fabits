@@ -1,7 +1,7 @@
-import chardet,hashlib,numpy,os,random,re,requests,threading,time,tkinter,turtle,webbrowser
-from tkinter import filedialog,messagebox,ttk
+import chardet,hashlib,numpy,os,random,requests,threading,time,tkinter,turtle,webbrowser
+from tkinter import filedialog,ttk
 from PIL import Image
-til='自制小工具集合 By——红石社Deiloproxide'; tp=os.path; curvsn='v1.2.0'
+til='自制小工具集合 By——红石社Deiloproxide'; tp=os.path; curvsn='v1.3.0'
 urp1='https://{}/Deiloproxide/Fabits/'; urp2='github.com'
 pro_lst5=[0.006]*73+[0.06*i+0.006 for i in range(16)]+[1]
 pro_lst4=[0.051]*8+[0.51*i+0.051 for i in range(4)]
@@ -19,39 +19,41 @@ hdnms={b'PNG':'.png',b'GIF8':'.gif',b'PDF':'.pdf',b'Rar!':'.rar',
        b'WAVEfmt':'.wav',b'MZ':'.exe',b'ftypmp':'.mp4',b'ftypM4':'.m4a',
        b'\xff\xd8\xff':'.jpg',b'\x49\x49\x2a\x00':'.tiff',b'\x1f\x8b':'.gz',
        b'PK\x03\x04':'.zip',b'7Z\xBC\xAF\x27':'.7z',b'\x49\x44\x33':'.mp3'}
-libs=['algorithms','cffi','chardet','csv','ctypes','cython','django','flask',
-      'hashlib','isort','jieba','jinja2','math','matplotlib','moment',('multi'
-      'processing'),'numpy','os','pandas','PIL','pip','pygame','requests','rich',
-      'scipy','scrapy','sqlite3','sympy','threading','time','tkinter','turtle',
-      'win32','win32gui','win32ui']
-icc=('r27l213br26l22r24l24l12l22r24l22r24l22el111l23br22l24l12l24er28r13br22'
+icc=('r117l117br26l22r24l24l12l22r24l22r24l22el111l23br22l24l12l24er28r13br22'
      'l22r24l23r22r12l12l27l12l23r24l23r22r17r26l22l16r111r24l22r24l22l14r12'
      'l23r13l227el14l215br26l22l16l22el32r22bl23r22r13l12l25l16l25l12el27l17'
      'br12l12l22l12el28l11bl34r12l12l22r24r12l12l27l12l23r24r12l12l22r24l22e')
 icd=('bl13l13l12r16l18r11r12l11l13l13l12r16l18r11r12l11el28bcl15l15l15l1'
      '5el14l14bcl13l13l13l13el12l12bcl11l11l11l11el01l11cbl01r11ebl11l11'
      'l11l11el11l11bl11r11el02l12bl01r11ebl11l11l11l11el11l11bl11r11el11')
+mb={'o':'ok','a':'abort','r':'retry','c':'cancel','y':'yes','n':'no',
+    'oc':'okcancel','yn':'yesno','ync':'yesnocancel','rc':'retrycancel',
+    'arc':'abortretrycancel','e':'error','i':'info','q':'question','w':'warning'}
 class Fabits:
     def __init__(self):
-        self.rt=tkinter.Tk(); self.rt.geometry('960x540')
+        self.rt=tkinter.Tk(); self.rt.geometry('1440x810+120+120')
         self.rt.iconphoto(True,tkinter.PhotoImage(file='Na.png'))
         self.rt.title(til); self.adcon(); self.admnu()
         self.prefn(); self.ics(); self.rt.mainloop()
     def adcon(self):
-        self.ls=ttk.Treeview(self.rt,columns=('opt',),show='tree')
-        self.slb=tkinter.Scrollbar(self.rt); self.cvs=tkinter.Canvas(self.rt)
+        self.memp1=tkinter.Frame(self.rt)
+        self.ls=ttk.Treeview(self.memp1,columns=('opt',),show='tree')
+        self.slb=tkinter.Scrollbar(self.memp1); self.cvs=tkinter.Canvas(self.rt)
         self.sc=turtle.TurtleScreen(self.cvs); self.tl=turtle.RawTurtle(self.sc)
         self.ls.column("#0",width=0,stretch=False)
         self.ls.column('opt',width=200,anchor='w'); stl=ttk.Style()
         stl.configure("Treeview",font=("TkDefaultFont",12,'bold'),rowheight=20)
         self.ls.config(yscrollcommand=self.slb.set)
         self.slb.config(command=self.ls.yview)
-        self.tetr=tkinter.Text(self.rt); self.slb2=tkinter.Scrollbar(self.rt)
+        self.memp2=tkinter.Frame(self.rt)
+        self.tetr=tkinter.Text(self.memp2); self.slb2=tkinter.Scrollbar(self.memp2)
         self.tetr.config(yscrollcommand=self.slb2.set)
         self.slb2.config(command=self.tetr.yview)
         self.tetr.config(font=("TkDefaultFont",12))
         self.tetr.bind('<Key>',lambda s: self.cchg())
         self.ofl=self.nfl=self.chg=0; self.txflnm='未命名文件'
+        self.slb.pack(side='right',fill='y'); self.ls.pack(fill='both',expand=True)
+        self.slb2.pack(side='right',fill='y'); self.tetr.pack(fill='both',expand=True)
     def adfun(self,lbl,knd):
         mntmp=tkinter.Menu(self.mnu,tearoff=0)
         self.mnu.add_cascade(label=lbl,menu=mntmp)
@@ -74,8 +76,7 @@ class Fabits:
             '项目仓库':lambda: webbrowser.open(urp1.format(urp2)),'版本检测':self.upd},
         '工具(T)':{'抽卡模拟器':self.conpuw,'圣遗物强化':self.itsth,'迷宫可视化':self.mazepl,
             '抽卡概率计算':lambda: self.thr(self.pulpro)},
-        '设置(S)':{'清屏':self.clear,'帮助':lambda: self.thr(self.hlp),'图标':self.ics,
-            '库检测':lambda: self.thr(self.lbdet)}}
+        '设置(S)':{'清屏':self.clear,'帮助':lambda: self.thr(self.hlp),'图标':self.ics}}
         self.mnu=tkinter.Menu(self.rt)
         for i in self.clr: self.ls.tag_configure(i,foreground=i)
         for i in self.funknd: self.adfun(i,self.funknd[i])
@@ -98,7 +99,7 @@ class Fabits:
         self.show(self.ls,'进程已结束','red')
         self.rt.after(250); self.winqut(self.pgm,ask=False)
     def adups(self,i,n):
-        if i in self.ups: messagebox.showwarning('选择角色重复','请重新选择')
+        if i in self.ups: self.mb('w','o','选择角色重复','请重新选择')
         else: self.ups[n]=i; self.show(self.et,f'角色{i}添加成功!','red')
         for i in self.ups:
             if not i: return
@@ -125,15 +126,13 @@ class Fabits:
     def clsf(self):
         if not self.ofl: return
         if self.chg:
-            svst=messagebox.askyesnocancel('提示','未保存的内容将会丢失,是否保存?')
-            if svst==None: return
-            if svst:
+            svst=self.mb('q','ync','关闭文件时保存','未保存的内容将会丢失,是否保存?')
+            if svst=='yes':
                 if self.savf(): return
                 else: self.tetr.delete('1.0','end')
+            elif svst=='cancel': return
         else: self.tetr.delete('1.0','end')
-        self.tetr.pack_forget(); self.slb2.pack_forget()
-        self.slb.pack(side='right',fill='y'); self.ls.pack(fill='both',expand=True)
-        self.ofl=0; self.rt.title(til)
+        self.memp2.pack_forget(); self.ofl=0; self.rt.title(til)
     def conpuw(self):
         self.pu=tkinter.Toplevel(self.rt)
         self.pu.title('抽卡模拟器'); self.pu.geometry('400x450')
@@ -157,11 +156,11 @@ class Fabits:
             else:
                 for j in i.split():
                     if ctm=='ups5':
-                        self.ups5.add_command(label=j,command=lambda j=j: self.adups(j,0))
+                        self.ups5.add_command(label=j,command=lambda k=j: self.adups(k,0))
                     elif ctm=='ups4':
-                        self.ups41.add_command(label=j,command=lambda j=j: self.adups(j,1))
-                        self.ups42.add_command(label=j,command=lambda j=j: self.adups(j,2))
-                        self.ups43.add_command(label=j,command=lambda j=j: self.adups(j,3))
+                        self.ups41.add_command(label=j,command=lambda k=j: self.adups(k,1))
+                        self.ups42.add_command(label=j,command=lambda k=j: self.adups(k,2))
+                        self.ups43.add_command(label=j,command=lambda k=j: self.adups(k,3))
                     itm[litm]=j; litm+=1
         self.dtm[ctm]=itm[:litm]; self.lb=tkinter.Label(self.pu,text='祈愿结果:')
         self.et=ttk.Treeview(self.pu,columns=('opt',),show='tree')
@@ -271,17 +270,16 @@ class Fabits:
             i+=1
         cmd(dig)
     def ics(self):
-        self.ls.pack_forget(); self.slb.pack_forget()
+        self.memp1.pack_forget()
         self.restul(); self.cvs.pack(fill='both',expand=True)
-        self.ico(icc,60,10,iter('d')); self.rt.after(500); self.restul()
-        self.tl.fd(315); self.tl.lt(45); self.ico(icd,90,20,iter('dwdwd'))
-        self.tl.rt(45); self.tl.fd(210)
+        self.ico(icc,60,12,iter('d')); self.rt.after(500); self.restul()
+        self.tl.fd(565); self.tl.rt(90); self.tl.fd(60); self.tl.lt(135)
+        self.ico(icd,90,22,iter('dwdwd')); self.tl.rt(45); self.tl.fd(255)
         icm1,icm2='圣·西门科技股份有限公司 出品','Sig·WestGate Tech. L.C.D. present.'
-        self.tl.write(icm1,align='center',font=("TkDefaultFont",20,'bold'))
-        self.tl.fd(30)
-        self.tl.write(icm2,align='center',font=("TkDefaultFont",15,'bold'))
-        self.rt.after(1250); self.cvs.pack_forget(); self.restul()
-        self.slb.pack(side='right',fill='y'); self.ls.pack(fill='both',expand=True)
+        self.tl.write(icm1,align='center',font=("TkDefaultFont",25,'bold'))
+        self.tl.fd(50); self.tl.write(icm2,align='center',font=("TkDefaultFont",20,'bold'))
+        self.rt.after(1250); self.cvs.pack_forget()
+        self.restul(); self.memp1.pack(side='bottom',fill='both',expand=True)
     def imgsrt(self):
         self.show(self.ls,'(1/4)打开','cyan')
         self.pth=self.dlg(0,'打开',('Text files','*.txt'))
@@ -351,17 +349,6 @@ class Fabits:
         self.btn2.pack(side='left',expand=True)
         self.btn3.pack(side='left',expand=True)
         self.it.grab_set(); self.it.wait_window()
-    def lbdet(self):
-        unl=[]; self.show(self.ls,'如果当前不是IDE环境,请忽略检测结果','red')
-        for i in libs:
-            try: exec(f'import {i}')
-            except ModuleNotFoundError:
-                self.show(self.ls,f'缺少{i}库','red')
-                unl.append(i)
-            else: self.show(self.ls,f'包含{i}库','green')
-        if unl: self.show(self.ls,'建议使用pip安装以下库:','red')
-        for i in unl: self.show(self.ls,i,'red')
-        self.show(self.ls,'检测完成','green')
     def lnksrt(self):
         arr,hd=eval(self.lmd('输入链表')),int(self.lmd('输入头地址')); lnkl,cur=0,hd
         while cur!=-1: lnkl+=1; cur=arr[cur][1]
@@ -394,6 +381,10 @@ class Fabits:
         self.mz.grab_set(); self.mz.wait_window()
         self.cvs.pack_forget(); self.restul()
         self.slb.pack(side='right',fill='y'); self.ls.pack(fill='both',expand=True)
+    @staticmethod
+    def mb(icn,tp,tle,msg):
+        mbt=tkinter.messagebox.Message(icon=mb[icn],type=mb[tp],title=tle,message=msg)
+        res=mbt.show(); return res
     def mzshw(self,lx,ly,rx,ry,clr):
         self.tl.teleport((lx-self.ln)*self.sz+280,(ly-self.wd)*self.sz-135)
         self.tl.fillcolor(clr); self.tl.begin_fill()
@@ -402,11 +393,10 @@ class Fabits:
             self.tl.fd((ry-ly)*self.sz); self.tl.lt(90)
         self.tl.end_fill()
     def opnf(self,ext=0,nda=0):
-        self.ls.pack_forget(); self.slb.pack_forget(); self.ofl=1
-        self.slb2.pack(side='right',fill='y'); self.tetr.pack(fill='both',expand=True)
+        self.ofl=1; self.memp2.pack(fill='both',expand=True)
         if self.chg:
-            svst=messagebox.askyesnocancel('提示','上一个未保存的内容将会丢失,是否保存?')
-            if svst==None or (svst and self.savf()):
+            svst=self.mb('q','ync','关闭文件时保存','上一个未保存的内容将会丢失,是否保存?')
+            if svst=='cancel' or (svst=='yes' and self.savf()):
                 self.rt.title(f'{til} - {self.txflnm}*'); return
         if ext:
             self.rsflnm=self.dlg(1,'打开',('All text files','*.*'))
@@ -633,20 +623,23 @@ class Fabits:
             if not tp.splitext(new)[1]: new+='.txt'
             fl=open(new,'w',encoding=enc); fl.write(otx); fl.close()
         self.show(self.ls,'进程已结束','red')
-    def ucd(self,itx):
-        demux=lambda i:chr(int(i.group(1),16))
-        otx=re.sub('\\\\u([0-9A-Fa-f]{4})',demux,itx)
-        return otx
     @staticmethod
-    def upd():
+    def ucd(itx):
+        litx=len(itx); io,otx,i=0,['']*litx,0
+        while i<litx:
+            if litx-i>5 and itx[i:i+2]=='\\u': otx[io]=chr(int(itx[i+2:i+6],16)); i+=6
+            else: otx[io]=itx[i]; i+=1
+            io+=1
+        return ''.join(otx)
+    def upd(self):
         lvurl=urp1.format(f'api.{urp2}/repos')+'releases/latest'
         resp=requests.get(lvurl)
         if resp.status_code==200:
             data=resp.json(); latvsn=data["tag_name"]
-            if latvsn==curvsn: messagebox.showinfo('','当前已经是最新版本')
-            elif messagebox.askokcancel('','有新版本!是否前往项目仓库下载?'):
+            if latvsn==curvsn: self.mb('i','o','提示','当前已经是最新版本')
+            elif self.mb('i','yn','提示','有新版本!是否前往项目仓库下载?')=='yes':
                 webbrowser.open(urp1.format(urp2)+'releases')
-        else: messagebox.showwarning('检查更新中断','请检查您的网络连接是否良好'); return
+        elif self.mb('q','yn','网络连接中断','无法连接服务器,是否重试?')=='yes': self.upd()
     def upgd(self):
         self.lvl[4]+=4
         if self.lvl[4]==20: self.btn2.config(state='disabled')
@@ -675,8 +668,7 @@ class Fabits:
             os.rename(self.pnm(names[i]),self.pnm(new))
         self.rt.after(250); self.winqut(self.pgm,ask=False)
         self.show(self.ls,'进程已结束','red')
-    @staticmethod
-    def winqut(tlk,ask=True):
+    def winqut(self,tlk,ask=True):
         if not ask: tlk.destroy()
-        elif messagebox.askokcancel('退出','确认退出?'): tlk.destroy()
+        elif self.mb('q','yn','退出','确认退出?')=='yes': tlk.destroy()
 if __name__=='__main__': fabits=Fabits()
