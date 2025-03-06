@@ -1,7 +1,7 @@
 import chardet,hashlib,numpy,os,random,requests,threading,time,tkinter,turtle,webbrowser
 from tkinter import filedialog,ttk
 from PIL import Image
-til='自制小工具集合 By——红石社Deiloproxide'; tp=os.path; curvsn='v1.3.0'
+til='自制小工具集合 By——红石社Deiloproxide'; tp=os.path; curvsn='v1.3.1'
 urp1='https://{}/Deiloproxide/Fabits/'; urp2='github.com'
 pro_lst5=[0.006]*73+[0.06*i+0.006 for i in range(16)]+[1]
 pro_lst4=[0.051]*8+[0.51*i+0.051 for i in range(4)]
