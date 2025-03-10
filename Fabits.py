@@ -321,7 +321,7 @@ class Fabits:
         self.btn1.pack(side='left',expand=True)
         self.btn2.pack(side='right',expand=True)
         self.tmp.grab_set(); self.tmp.wait_window()
-        return self.var()
+        return self.var
     def iso(self):
         n=int(self.lmd('基团-CnH2n+1,输入n值'))
         hm,isol=numpy.zeros(n+1,dtype=int),1; hm[0]=1
