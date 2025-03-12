@@ -129,7 +129,20 @@
 * 提供部分配置性的设置，
 * 比如字体大小，夜间模式等
 
+## 2025-03-09modified
+### 新增特色功能：
+* 重做了部分UI，确保不会频繁弹窗
+* 优化了部分代码的逻辑
+
+### 修复了以下的bug：
+* 弹窗无法输入
+
 ```cpp
-char Luv="I love Nahida";
+#include<stdio.h>
+int main(){
+	char Luv[]="I love Nahida";
+	printf("%s",Luv);
+	return 0;
+}
 ```
 ![](https://latex.codecogs.com/svg.latex?\int&space;Nahida=N\frac{a^{2}}{2}hi+C)
