@@ -1,7 +1,13 @@
-import chardet,ctypes,hashlib,json,numpy,os,random,requests
-import subprocess,sys,threading,time,tkinter,turtle,webbrowser
+import ctypes,hashlib,json,os,random,subprocess,sys
+import threading,time,tkinter,turtle,webbrowser
 from tkinter import filedialog,ttk
-from PIL import Image
+try:
+    import chardet,numpy,requests
+    from PIL import Image
+except ModuleNotFoundError:
+    ins='pip install chardet numpy pillow requests'
+    ano=' -i http://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com'
+    os.system(ins+ano); now=sys.executable; subprocess.Popen([now]+sys.argv); sys.exit(0)
 lst=numpy.zeros(shape=(38000,4),dtype=int); tp=os.path
 proes=numpy.zeros(38000); dic=numpy.zeros(shape=(52,91,5,2))
 hdnms={b'PNG':'.png',b'GIF8':'.gif',b'PDF':'.pdf',b'Rar!':'.rar',
@@ -54,7 +60,7 @@ class Fabits:
                     if j in hd:
                         self.pgu(i+1,f"{nm} -> {nm+hdnms[j]}",'cyan')
                         os.rename(nm,nm+hdnms[j]); break
-                else: self.pgu(i+1,f'未知文件类型: {self.cfg['name']}','red')
+                else: self.pgu(i+1,f"未知文件类型: {self.cfg['name']}",'red')
             self.rt.after(250); self.winqut(self.pgm,'pginit')
         self.show(self.ls,'进程已结束','red'); self.show(self.ls,'>>>','purple')
     def admnu(self):

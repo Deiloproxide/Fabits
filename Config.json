@@ -1,9 +1,9 @@
 {
-    "curvsn": "v1.6.0",
+    "curvsn": "v1.6.1",
     "scr": 30,
     "scwth": 2560,
     "schgt": 1600,
-    "bgidx": 1,
+    "bgidx": 2,
     "bg": [
         "#FFFFFF",
         "#181818"
@@ -402,7 +402,7 @@
     "icd": "bl13l13l12r16l18r11r12l11l13l13l12r16l18r11r12l11el28bcl15l15l15l15el14l14bcl13l13l13l13el12l12bcl11l11l11l11el01l11cbl01r11ebl11l11l11l11el11l11bl11r11el02l12bl01r11ebl11l11l11l11el11l11bl11r11el11",
     "pulprogd": "720x270+920+665",
     "txmng": "720x298+732+491",
-    "Fabits": "1920x1080+601+329",
+    "Fabits": "1920x1080+607+247",
     "prefr": "480x180+1040+710",
     "schgd": "540x210+1010+695",
     "conpuw": "480x420+1040+590",
