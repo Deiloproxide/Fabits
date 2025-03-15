@@ -1,60 +1,34 @@
-import chardet,ctypes,hashlib,numpy,os,random,requests
-import threading,time,tkinter,turtle,webbrowser
+import chardet,ctypes,hashlib,json,numpy,os,random,requests
+import subprocess,sys,threading,time,tkinter,turtle,webbrowser
 from tkinter import filedialog,ttk
 from PIL import Image
-til='自制小工具集合 By——红石社Deiloproxide'; tp=os.path; curvsn='v1.5.1'
-urp1='https://{}/Deiloproxide/Fabits/'; urp2='github.com'
-pro_lst5=[0.006]*73+[0.06*i+0.006 for i in range(16)]+[1]
-pro_lst4=[0.051]*8+[0.51*i+0.051 for i in range(4)]
-tu_lst=[0.5,0.55,0.75,1]; dic=numpy.zeros(shape=(52,91,5,2))
-lst=numpy.zeros(shape=(38000,4),dtype=int); proes=numpy.zeros(38000)
-name=['生命值','攻击力','防御力','生命值 ','攻击力 ','防御力 ',
-      '元素充能效率','暴击率','暴击伤害','元素精通 ','治疗加成']
-mnpro=[[[3],[1]],[[4],[1]],[[-1,6,9],[8,1,1]],[[-1,-2,9],[23,16,1]],
-       [[-1,7,8,10,9],[33,5,5,5,2]]]
-sipro=[4,4,4,6,6,6,4,3,3,4]; siupro=[0.7,0.8,0.9,1]
-siup=[5.83,5.83,7.29,298.75,19.45,23.15,6.48,3.89,7.77,23.31]
-knd=['生之花','死之羽','时之沙','空之杯','理之冠']; elmnkd='火水风雷草冰岩 '
+lst=numpy.zeros(shape=(38000,4),dtype=int); tp=os.path
+proes=numpy.zeros(38000); dic=numpy.zeros(shape=(52,91,5,2))
 hdnms={b'PNG':'.png',b'GIF8':'.gif',b'PDF':'.pdf',b'Rar!':'.rar',
        b'FLV':'.flv',b'BM':'.bmp',b'AVI LIST':'.avi',b'8BPS':'.psd',
        b'WAVEfmt':'.wav',b'MZ':'.exe',b'ftypmp':'.mp4',b'ftypM4':'.m4a',
        b'\xff\xd8\xff':'.jpg',b'\x49\x49\x2a\x00':'.tiff',b'\x1f\x8b':'.gz',
        b'PK\x03\x04':'.zip',b'7Z\xBC\xAF\x27':'.7z',b'\x49\x44\x33':'.mp3'}
-icc=('r116l117br26l22r24l24l12l22r24l22r24l22el111l23br22l24l12l24er28r13br22'
-     'l22r24l23r22r12l12l27l12l23r24l23r22r17r26l22l16r111r24l22r24l22l14r12'
-     'l23r13l227el14l215br26l22l16l22el32r22bl23r22r13l12l25l16l25l12el27l17'
-     'br12l12l22l12el28l11bl34r12l12l22r24r12l12l27l12l23r24r12l12l22r24l22e')
-icd=('bl13l13l12r16l18r11r12l11l13l13l12r16l18r11r12l11el28bcl15l15l15l1'
-     '5el14l14bcl13l13l13l13el12l12bcl11l11l11l11el01l11cbl01r11ebl11l11'
-     'l11l11el11l11bl11r11el02l12bl01r11ebl11l11l11l11el11l11bl11r11el11')
-mb={'o':'ok','a':'abort','r':'retry','c':'cancel','y':'yes','n':'no',
-    'oc':'okcancel','yn':'yesno','ync':'yesnocancel','rc':'retrycancel',
-    'arc':'abortretrycancel','e':'error','i':'info','q':'question','w':'warning'}
 class Fabits:
     def __init__(self):
-        try:
-            self.scr=ctypes.windll.shcore.GetScaleFactorForDevice(0)//5
-            ctypes.windll.shcore.SetProcessDpiAwareness(1)
-        except: self.scr=20
-        self.rt=tkinter.Tk(); self.scwth=self.rt.winfo_screenwidth()
-        self.schgt=self.rt.winfo_screenheight()
-        self.rt.geometry(self.calsz(64,36))
+        if self.preset()==-1: return
+        self.rt=tkinter.Tk(); self.check();
+        self.rt.geometry(self.calsz(64,36,'Fabits'))
         self.rt.iconphoto(True,tkinter.PhotoImage(file='Na.png'))
-        self.rt.title(til); self.adcon(); self.admnu(); self.prefn()
-        self.ics(); self.rt.mainloop()
+        self.rt.title(self.cfg['til']); self.rt.config(bg=self.bgin)
+        self.adcon(); self.admnu(); self.style(); self.prefn()
+        self.ics(); self.rt.mainloop(); self.savcfg()
     def adcon(self):
         self.memp1=ttk.Frame(self.rt)
         self.ls=ttk.Treeview(self.memp1,columns=('opt',),show='tree')
-        self.slb=ttk.Scrollbar(self.memp1); self.cvs=tkinter.Canvas(self.rt)
+        self.slb=tkinter.Scrollbar(self.memp1); self.cvs=tkinter.Canvas(self.rt)
         self.sc=turtle.TurtleScreen(self.cvs); self.tl=turtle.RawTurtle(self.sc)
-        self.ls.column('#0',width=0,stretch=False); ftsz=round(0.4*self.scr)
-        self.ls.column('opt',width=30*self.scr,anchor='w'); stl=ttk.Style()
-        stl.configure('Treeview',font=('TkDefaultFont',ftsz,'bold'),rowheight=2*ftsz+1)
+        self.sc.bgcolor(self.bg); self.ls.column('#0',width=0,stretch=False)
+        self.ls.column('opt',width=30*self.scr,anchor='w')
         self.ls.config(yscrollcommand=self.slb.set)
-        self.slb.config(command=self.ls.yview)
-        self.memp2=ttk.Frame(self.rt)
-        self.tetr=tkinter.Text(self.memp2,undo=True); self.slb2=ttk.Scrollbar(self.memp2)
-        self.tetr.config(yscrollcommand=self.slb2.set)
+        self.slb.config(command=self.ls.yview); self.memp2=ttk.Frame(self.rt)
+        self.tetr=tkinter.Text(self.memp2,undo=True); self.slb2=tkinter.Scrollbar(self.memp2)
+        self.tetr.config(yscrollcommand=self.slb2.set,background=self.bg,foreground=self.txchrc)
         self.slb2.config(command=self.tetr.yview); self.show(self.ls,'>>>','purple')
         self.tetr.config(font=('TkDefaultFont',12))
         self.tetr.bind('<Key>',lambda s: self.cchg())
@@ -62,7 +36,7 @@ class Fabits:
         self.slb.pack(side='right',fill='y'); self.ls.pack(fill='both',expand=True)
         self.slb2.pack(side='right',fill='y'); self.tetr.pack(fill='both',expand=True)
     def adfun(self,lbl,knd):
-        mntmp=tkinter.Menu(self.mnu,tearoff=0)
+        mntmp=tkinter.Menu(self.mnu,tearoff=0,bg=self.bgin,fg=self.txchrc)
         self.mnu.add_cascade(label=lbl,menu=mntmp)
         for i in knd: mntmp.add_command(label=i,command=knd[i])
     def adlsnd(self):
@@ -72,16 +46,17 @@ class Fabits:
         fnames=[i for i in os.listdir(self.pth) if tp.isfile(self.pnm(i))]
         names=[i for i in fnames if not tp.splitext(i)[1]]
         self.show(self.ls,'(2/2)转换','cyan'); lnm=len(names)
-        if names: self.pginit('查找添加缺失后缀',lnm)
-        for i in range(lnm):
-            nm=self.pnm(names[i]); fl=open(nm,'rb'); hd=fl.read(32); fl.close()
-            for j in hdnms:
-                if j in hd:
-                    self.pgu(i+1,f'{name} -> {name+hdnms[j]}','cyan')
-                    os.rename(nm,nm+hdnms[j]); break
-            else: self.pgu(i+1,f'未知文件类型: {name}','red')
+        if lnm:
+            self.pginit('查找添加缺失后缀',lnm)
+            for i in range(lnm):
+                nm=self.pnm(names[i]); fl=open(nm,'rb'); hd=fl.read(32); fl.close()
+                for j in hdnms:
+                    if j in hd:
+                        self.pgu(i+1,f"{nm} -> {nm+hdnms[j]}",'cyan')
+                        os.rename(nm,nm+hdnms[j]); break
+                else: self.pgu(i+1,f'未知文件类型: {self.cfg['name']}','red')
+            self.rt.after(250); self.winqut(self.pgm,'pginit')
         self.show(self.ls,'进程已结束','red'); self.show(self.ls,'>>>','purple')
-        self.rt.after(250); self.winqut(self.pgm)
     def admnu(self):
         self.clr={'black','red','green','yellow','blue','purple','cyan','grey','white'}
         self.funknd={
@@ -89,7 +64,7 @@ class Fabits:
             '另存为':lambda: self.savf(1),'导入':lambda: self.opnf(nda=1),
             '导出':lambda: self.savf(nda=1),'查找与替换':self.schgd,'撤销':self.undo,
             '重做':self.redo,'关闭':self.clsf,
-            '退出':lambda: self.winqut(self.rt) if self.mb('q','yn','退出','确认退出?')=='yes' else None},
+            '退出':lambda: None if self.clsf() else self.winqut(self.rt,'Fabits')},
         '算法(A)':{'同分异构体数量':lambda: self.thr(self.iso),
             '链表冒泡排序':lambda: self.thr(self.lnksrt),'最大环长度':lambda: self.thr(self.ring),
             '求解罗马数字':lambda: self.thr(self.rome)},
@@ -99,12 +74,12 @@ class Fabits:
             '解unicode':lambda: self.txmng(self.ucd),'视频重命名':lambda: self.thr(self.vdornm),
             '文本加解密':lambda: self.txmng(lambda itx: self.txcbtb(itx,0,0,0))},
         '网络(I)':{'官网':lambda: webbrowser.open('https://nahida520.love'),
-            '项目仓库':lambda: webbrowser.open(urp1.format(urp2)),'版本检测':self.upd},
+            '项目仓库':lambda: webbrowser.open(self.cfg['urp1'].format(self.cfg['urp2'])),'版本检测':self.upd},
         '工具(T)':{'抽卡模拟器':self.conpuw,'圣遗物强化':self.itsth,'迷宫可视化':self.mazepl,
             '抽卡概率计算':self.pulprogd},
-        '设置(S)':{'清屏':self.clear,'帮助':lambda: self.thr(self.hlp),'图标':self.ics}}
+        '设置(S)':{'清屏':self.clear,'帮助':lambda: self.thr(self.hlp),'图标':self.ics,'选项':self.prefr}}
         self.mnu=tkinter.Menu(self.rt)
-        for i in self.clr: self.ls.tag_configure(i,foreground=i)
+        for i in self.clr: self.ls.tag_configure(i,foreground=i,background=self.bg)
         for i in self.funknd: self.adfun(i,self.funknd[i])
         self.rt.config(menu=self.mnu)
     def adups(self,i,n):
@@ -113,11 +88,28 @@ class Fabits:
         for i in self.ups:
             if not i: return
         self.btn1.config(state='normal'); self.btn2.config(state='normal')
-    def calsz(self,w,h):
-        a=w*self.scr; b=h*self.scr; c=(self.scwth-a)//2; d=(self.schgt-b)//2
+    def calsz(self,w,h,ky):
+        size=self.cfg.get(ky,'')
+        if size: return size
+        a,b=w*self.scr,h*self.scr; c,d=(self.scwth-a)//2,(self.schgt-b)//2
         return f'{a}x{b}+{c}+{d}'
     def cchg(self):
-        if not self.chg: self.chg=1; self.rt.title(f'{til} - {self.txflnm}*')
+        if not self.chg: self.chg=1; self.rt.title(f"{self.cfg['til']} - {self.txflnm}*")
+    def check(self):
+        self.scwth,self.schgt=self.rt.winfo_screenwidth(),self.rt.winfo_screenheight()
+        self.chek=self.cfg.get('scr','')==self.scr; self.reboot=0
+        self.chek=self.chek and self.cfg.get('scwth','')==self.scwth
+        self.chek=self.chek and self.cfg.get('schgt','')==self.schgt
+        srckys=['schgd','txmng','conpuw','inp','itsth','mazepl','pulprogd','Fabits','pginit','prefr']
+        if not self.chek:
+            for i in srckys: self.cfg.pop(i,None)
+        self.bgidx=self.cfg['bgidx']
+        if self.bgidx==2:
+            lctme=time.localtime()
+            if 6<=lctme.tm_hour<18: self.bgidx=0
+            else: self.bgidx=1
+        self.bg=self.cfg['bg'][self.bgidx]; self.txchrc=self.cfg['chr'][self.bgidx]
+        self.bgin=self.cfg['bgin'][self.bgidx]
     def clear(self):
         self.ls.delete(*self.ls.get_children()); self.show(self.ls,'>>>','purple')
     def clrplc(self):
@@ -141,59 +133,49 @@ class Fabits:
         if self.chg:
             svst=self.mb('q','ync','关闭文件时保存','未保存的内容将会丢失,是否保存?')
             if svst=='yes':
-                if self.savf(): return
+                if self.savf(): return -1
                 else: self.tetr.delete('1.0','end')
-            elif svst=='cancel': return
+            elif svst=='cancel': return -1
         else: self.tetr.delete('1.0','end')
-        self.memp2.pack_forget(); self.ofl=0; self.rt.title(til)
+        self.memp2.pack_forget(); self.ofl=0; self.rt.title(self.cfg['til'])
     def conpuw(self):
-        self.pu=tkinter.Toplevel(self.rt); self.pu.transient(self.rt)
-        self.pu.title('抽卡模拟器'); self.pu.geometry(self.calsz(16,14))
-        self.pum=tkinter.Menu(self.pu); self.pu.config(menu=self.pum)
-        self.ups5=tkinter.Menu(self.pum,tearoff=0)
-        self.ups41=tkinter.Menu(self.pum,tearoff=0)
-        self.ups42=tkinter.Menu(self.pum,tearoff=0)
-        self.ups43=tkinter.Menu(self.pum,tearoff=0)
+        self.puw=tkinter.Toplevel(self.rt); self.puw.transient(self.rt)
+        self.puw.title('抽卡模拟器'); self.puw.geometry(self.calsz(16,14,'conpuw'))
+        self.pu=ttk.Frame(self.puw); self.pum=tkinter.Menu(self.pu)
+        self.puw.config(menu=self.pum)
+        self.ups5=tkinter.Menu(self.pum,tearoff=0,bg=self.bgin,fg=self.txchrc)
+        self.ups41=tkinter.Menu(self.pum,tearoff=0,bg=self.bgin,fg=self.txchrc)
+        self.ups42=tkinter.Menu(self.pum,tearoff=0,bg=self.bgin,fg=self.txchrc)
+        self.ups43=tkinter.Menu(self.pum,tearoff=0,bg=self.bgin,fg=self.txchrc)
         self.pum.add_cascade(label='五星UP',menu=self.ups5)
         self.pum.add_cascade(label='四星UP1',menu=self.ups41)
         self.pum.add_cascade(label='四星UP2',menu=self.ups42)
         self.pum.add_cascade(label='四星UP3',menu=self.ups43)
-        self.dtm={'ups5':None,'ups4':None,'fups5':None,
-                  'wpns5':None,'wpns4':None,'wpns3':None}
-        itm,litm,ctm,self.put5,self.put4,self.true_up5,self.true_up4=['']*100,0,'',0,0,0,0
-        self.fu,self.ups=0,['']*4
-        libf=self.txcbtb('',1,0,1,frmopn='PulChrLibs.nda'); libs=libf.split('\r\n')
-        for i in libs:
-            if not ctm: ctm=i
-            elif i in self.dtm: self.dtm[ctm]=itm[:litm]; litm=0; ctm=i
-            else:
-                for j in i.split():
-                    if ctm=='ups5':
-                        self.ups5.add_command(label=j,command=lambda k=j: self.adups(k,0))
-                    elif ctm=='ups4':
-                        self.ups41.add_command(label=j,command=lambda k=j: self.adups(k,1))
-                        self.ups42.add_command(label=j,command=lambda k=j: self.adups(k,2))
-                        self.ups43.add_command(label=j,command=lambda k=j: self.adups(k,3))
-                    itm[litm]=j; litm+=1
-        self.dtm[ctm]=itm[:litm]; self.lb=ttk.Label(self.pu,text='祈愿结果:')
+        dtm=['ups5','ups4','fups5','wpns5','wpns4','wpns3']
+        self.ups,self.put5,self.put4,self.true_up4,self.true_up5,self.fu=['']*4,0,0,0,0,0
+        for i in dtm:
+            for j in self.cfg[i]:
+                if i=='ups5':
+                    self.ups5.add_command(label=j,command=lambda k=j: self.adups(k,0))
+                elif i=='ups4':
+                    self.ups41.add_command(label=j,command=lambda k=j: self.adups(k,1))
+                    self.ups42.add_command(label=j,command=lambda k=j: self.adups(k,2))
+                    self.ups43.add_command(label=j,command=lambda k=j: self.adups(k,3))
+        self.lb=ttk.Label(self.pu,text='祈愿结果')
         self.et=ttk.Treeview(self.pu,columns=('opt',),show='tree')
-        self.slet=ttk.Scrollbar(self.pu); self.emp=ttk.Frame(self.pu)
+        self.slet=tkinter.Scrollbar(self.pu); self.emp=ttk.Frame(self.pu)
         self.btn1=ttk.Button(self.emp,text='祈愿一次',command=lambda: self.pul(1))
         self.btn2=ttk.Button(self.emp,text='祈愿十次',command=lambda: self.pul(10))
-        self.btn3=ttk.Button(self.emp,text='退出',command=lambda: self.winqut(self.pu))
-        self.btn1.config(width=8,state='disabled')
-        self.btn2.config(width=8,state='disabled')
-        self.btn3.config(width=8)
-        self.et.column('#0',width=0,stretch=False)
+        self.btn3=ttk.Button(self.emp,text='退出',command=lambda: self.winqut(self.puw,'conpuw'))
+        self.btn1.config(width=8,state='disabled'); self.btn2.config(width=8,state='disabled')
+        self.btn3.config(width=8); self.et.column('#0',width=0,stretch=False)
         self.et.column('opt',width=15*self.scr,anchor='w')
-        self.et.config(yscrollcommand=self.slet.set)
-        self.slet.config(command=self.et.yview)
-        for i in self.clr: self.et.tag_configure(i, foreground=i)
+        self.et.config(yscrollcommand=self.slet.set); self.slet.config(command=self.et.yview)
+        for i in self.clr: self.et.tag_configure(i, foreground=i,background=self.bg)
         self.slet.pack(side='right',fill='y'); self.lb.pack(expand=True)
         self.et.pack(fill='both',expand=True); self.emp.pack(fill='x',expand=True)
-        self.btn1.pack(side='left',expand=True)
-        self.btn2.pack(side='left',expand=True)
-        self.btn3.pack(side='left',expand=True)
+        self.btn1.pack(side='left',expand=True); self.btn2.pack(side='left',expand=True)
+        self.btn3.pack(side='left',expand=True); self.pu.pack(fill='both',expand=True)
     def delmark(self):
         if self.lastsc[0]: self.tetr.tag_remove('match',self.lastsc[0],self.lastsc[1])
     @staticmethod
@@ -212,8 +194,8 @@ class Fabits:
         for i in range(self.ln*2+1):
             for j in range(self.wd*2+1):
                 if i in [0,self.ln*2] or j in [0,self.wd*2]: self.maze[i,j]=0
-        self.mzshw(0,0,self.ln*2+1,self.wd*2+1,'#000000')
-        self.mzshw(1,1,self.ln*2,self.wd*2,'#ffffff')
+        self.mzshw(0,0,self.ln*2+1,self.wd*2+1,self.txchrc)
+        self.mzshw(1,1,self.ln*2,self.wd*2,self.bg)
         stk,top=numpy.zeros(shape=(self.ln*self.wd,4),dtype=int),0
         stk[top]=[1,1,self.ln*2-1,self.wd*2-1]; top+=1
         while top>0:
@@ -224,39 +206,39 @@ class Fabits:
             stk[top]=[x+1,ly,rx,y-1]; top+=1; stk[top]=[x+1,y+1,rx,ry]; top+=1
             for i in range(lx,rx+1): self.maze[i][y]=0
             for i in range(ly,ry+1): self.maze[x][i]=0
-            self.mzshw(lx,y,rx+1,y+1,'#000000'); self.mzshw(x,ly,x+1,ry+1,'#000000')
+            self.mzshw(lx,y,rx+1,y+1,self.txchrc); self.mzshw(x,ly,x+1,ry+1,self.txchrc)
             rtmp=[(random.randint(lx,x-1)//2*2+1,y),(random.randint(x+1,rx)//2*2+1,y),
                   (x,random.randint(ly,y-1)//2*2+1),(x,random.randint(y+1,ry)//2*2+1)]
             k=random.randrange(4)
             for i in range(4):
                 if k-i:
                     self.maze[rtmp[i][0],rtmp[i][1]]=1
-                    self.mzshw(rtmp[i][0],rtmp[i][1],rtmp[i][0]+1,rtmp[i][1]+1,'#ffffff')
+                    self.mzshw(rtmp[i][0],rtmp[i][1],rtmp[i][0]+1,rtmp[i][1]+1,self.bg)
         self.maze[self.bx*2-1,self.by*2-1]=1; self.maze[self.ex*2-1,self.ey*2-1]=2
         self.mzshw(self.bx*2-1,self.by*2-1,self.bx*2,self.by*2,'#22cefc')
         self.mzshw(self.ex*2-1,self.ey*2-1,self.ex*2,self.ey*2,'#00ff00')
         self.btn4.config(state='normal'); self.btn5.config(state='normal')
     def getit(self):
         self.sis,self.lvl,self.kd=[0]*4,[0]*5,random.randrange(5)
-        self.mn=random.choices(mnpro[self.kd][0],weights=mnpro[self.kd][1])[0]
+        self.mn=random.choices(self.cfg['mnpro'][self.kd][0],weights=self.cfg['mnpro'][self.kd][1])[0]
         if self.mn==-1: self.mn=random.randint(0,2)
         if self.mn==-2:
-            self.mn=random.choice(elmnkd)
+            self.mn=random.choice(self.cfg['elmnkd'])
             if self.mn==' ': self.mn='物理'
             else: self.mn+='元素'
             self.mn+='伤害加成'
-        else: self.mn=name[self.mn]
+        else: self.mn=self.cfg['name'][self.mn]
         self.sisl,self.nm=0,random.choices((3,4),weights=(4,1))[0]
         while self.sisl in range(self.nm):
-            si=random.choices(range(len(sipro)),weights=sipro)[0]
-            if si not in self.sis and name[si]!=self.mn:
-                self.lvl[self.sisl]=siup[si]*random.choice(siupro)
+            si=random.choices(range(len(self.cfg['sipro'])),weights=self.cfg['sipro'])[0]
+            if si not in self.sis and self.cfg['name'][si]!=self.mn:
+                self.lvl[self.sisl]=self.cfg['siup'][si]*random.choice(self.cfg['siupro'])
                 self.sis[self.sisl]=si; self.sisl+=1
         self.btn2.config(state='normal')
         self.et.delete(*self.et.get_children()); self.prit()
     def getvar(self):
         self.var=self.etr.get()
-        if self.var: self.tmp.destroy()
+        if self.var: self.winqut(self.tmp,'inp')
         else: self.mb('w','o','提示','请检查输入的内容'); return
     def hlp(self):
         fl=open('README.md','r',encoding='utf-8');
@@ -274,12 +256,11 @@ class Fabits:
             ln=fl.readline()
         fl.close()
         self.show(self.ls,'>>>','purple')
-    @staticmethod
-    def hshgn():
-        licc,lictmp,hdgl,hsh=len(icc),0,64,hashlib.sha256()
+    def hshgn(self):
+        licc,lictmp,hdgl,hsh=len(self.cfg['icc']),0,64,hashlib.sha256()
         while True:
             if hdgl==64:
-                hdgl=0; hsh.update(icc[lictmp%licc].encode())
+                hdgl=0; hsh.update(self.cfg['icc'][lictmp%licc].encode())
                 lictmp+=1; hdg=hsh.hexdigest()
             yield int(hdg[hdgl:hdgl+2],16)
             hdgl+=2
@@ -289,7 +270,7 @@ class Fabits:
               'l':lambda a: (self.tl.lt(int(a[0])*ang),self.tl.fd(int(a[1:])*sz)),
               'r':lambda a: (self.tl.rt(int(a[0])*ang),self.tl.fd(int(a[1:])*sz)),
               'c':lambda a: self.tl.color(cmds[next(clr)]),
-              'd':'#22cefc','w':'#ffffff'}
+              'd':'#22cefc','w':self.bg}
         i,j,cmd,dig=0,len(icx),cmds['c'],''
         while i<j:
             if icx[i].isdigit(): dig+=icx[i]
@@ -299,9 +280,11 @@ class Fabits:
     def ics(self):
         self.memp1.pack_forget(); sztmp=lambda x: round(x*self.scr)
         self.restul(); self.cvs.pack(fill='both',expand=True)
-        self.ico(icc,60,sztmp(0.5),iter('d')); self.rt.after(500); self.restul()
+        self.ico(self.cfg['icc'],60,sztmp(0.5),iter('d'))
+        self.rt.after(500); self.restul()
         self.ico('l041r24l30',45,sztmp(0.6),iter('d'))
-        self.ico(icd,90,self.scr,iter('dwdwd')); self.tl.rt(45); self.tl.fd(11*self.scr)
+        self.ico(self.cfg['icd'],90,self.scr,iter('dwdwd'))
+        self.tl.rt(45); self.tl.fd(11*self.scr)
         icm1,icm2='圣·西门科技股份有限公司 出品','Sig·WestGate Tech. L.C.D. present.'
         self.tl.write(icm1,align='center',font=('TkDefaultFont',sztmp(0.6),'bold'))
         self.tl.fd(sztmp(2.2))
@@ -317,10 +300,10 @@ class Fabits:
         msg=lambda tx,x: self.pgu(x+1,f'已{tx}{x+1}/{len(names)}','cyan')
         self.show(self.ls,'(2/4)转换','cyan')
         pis=[[numpy.array(Image.open(self.pnm(names[i])))[:,:3],msg('转换',i)] for i in lnr]
-        self.rt.after(250); self.winqut(self.pgm); self.pginit('图片排序',ln)
+        self.rt.after(250); self.winqut(self.pgm,'pginit'); self.pginit('图片排序',ln)
         self.show(self.ls,'(3/4)排序','cyan')
         sort=[[numpy.mean(pis[i][0]),names[i],msg('完成',i)] for i in lnr]
-        self.rt.after(250); self.winqut(self.pgm)
+        self.rt.after(250); self.winqut(self.pgm,'pginit')
         sort=sorted(sort,key=lambda i:i[0]); self.show(self.ls,'(4/4)整理','cyan')
         for i in lnr: os.rename(self.pnm(sort[i][1]),self.pnm(f'pix{i:04d}.png'))
         names=[i for i in os.listdir(self.pth) if i.lower().endswith('.png')]
@@ -328,16 +311,16 @@ class Fabits:
         self.show(self.ls,'进程已结束','red'); self.show(self.ls,'>>>','purple')
     def inp(self,st):
         self.tmp=tkinter.Toplevel(self.rt)
-        self.tmp.title(''); self.tmp.geometry(self.calsz(16,5))
-        self.lb=ttk.Label(self.tmp,text=st)
-        self.etr=ttk.Entry(self.tmp,width=40); self.emp=ttk.Frame(self.tmp)
+        self.tmp.title(''); self.tmp.geometry(self.calsz(16,5,'inp'))
+        self.inemp=ttk.Label(self.tmp); self.lb=ttk.Label(self.inemp,text=st)
+        self.etr=ttk.Entry(self.inemp,width=40); self.emp=ttk.Frame(self.tmp)
         self.btn1=ttk.Button(self.emp,text='全选',command=lambda: self.scl(self.etr))
         self.btn2=ttk.Button(self.emp,text='确认',command=self.getvar)
         self.btn1.config(width=10); self.btn2.config(width=10)
-        self.lb.pack(expand=True); self.etr.pack(expand=True)
-        self.emp.pack(fill='x',expand=True); self.btn1.pack(side='left',expand=True)
-        self.btn2.pack(side='left',expand=True); self.tmp.grab_set()
-        self.tmp.wait_window(); return self.var
+        self.lb.pack(expand=True); self.inemp.pack(fill='both',expand=True)
+        self.etr.pack(expand=True); self.emp.pack(fill='both',expand=True)
+        self.btn1.pack(side='left',expand=True); self.btn2.pack(side='left',expand=True)
+        self.tmp.grab_set(); self.tmp.wait_window(); return self.var
     def iso(self):
         n=int(self.inp('基团-CnH2n+1,输入n值'))
         hm,isol=numpy.zeros(n+1,dtype=int),1; hm[0]=1
@@ -349,28 +332,23 @@ class Fabits:
             hm[isol],isol=res,isol+1
         self.show(self.ls,f'{hm[n]}','green'); self.show(self.ls,'>>>','purple')
     def itsth(self):
-        self.it=tkinter.Toplevel(self.rt); self.it.transient(self.rt)
-        self.it.title('圣遗物强化'); self.it.geometry(self.calsz(16,14))
-        self.lb=ttk.Label(self.it,text='强化结果:')
+        self.itw=tkinter.Toplevel(self.rt); self.itw.transient(self.rt)
+        self.itw.title('圣遗物强化'); self.itw.geometry(self.calsz(16,14,'itsth'))
+        self.it=ttk.Frame(self.itw); self.lb=ttk.Label(self.it,text='强化结果:')
         self.et=ttk.Treeview(self.it,columns=('opt',),show='tree')
-        self.slet=ttk.Scrollbar(self.it)
-        self.emp=ttk.Frame(self.it)
+        self.slet=tkinter.Scrollbar(self.it); self.emp=ttk.Frame(self.it)
         self.btn1=ttk.Button(self.emp,text='获取',command=self.getit)
         self.btn2=ttk.Button(self.emp,text='强化',command=self.upgd)
-        self.btn3=ttk.Button(self.emp,text='退出',command=lambda: self.winqut(self.it))
-        self.btn1.config(width=8)
-        self.btn2.config(width=8,state='disabled')
-        self.btn3.config(width=8)
-        self.et.column('#0',width=0,stretch=False)
+        self.btn3=ttk.Button(self.emp,text='退出',command=lambda: self.winqut(self.itw,'itsth'))
+        self.btn1.config(width=8); self.btn2.config(width=8,state='disabled')
+        self.btn3.config(width=8); self.et.column('#0',width=0,stretch=False)
         self.et.column('opt',width=15*self.scr,anchor='w')
-        self.et.config(yscrollcommand=self.slet.set)
-        self.slet.config(command=self.et.yview)
-        for i in self.clr: self.et.tag_configure(i, foreground=i)
+        self.et.config(yscrollcommand=self.slet.set); self.slet.config(command=self.et.yview)
+        for i in self.clr: self.et.tag_configure(i, foreground=i,background=self.bg)
         self.slet.pack(side='right',fill='y'); self.lb.pack(expand=True)
         self.et.pack(fill='both',expand=True); self.emp.pack(fill='x',expand=True)
-        self.btn1.pack(side='left',expand=True)
-        self.btn2.pack(side='left',expand=True)
-        self.btn3.pack(side='left',expand=True)
+        self.btn1.pack(side='left',expand=True); self.btn2.pack(side='left',expand=True)
+        self.btn3.pack(side='left',expand=True); self.it.pack(fill='both',expand=True)
     def lnksrt(self):
         arr,hd=eval(self.inp('输入链表')),int(self.inp('输入头地址')); lnkl,cur=0,hd
         while cur!=-1: lnkl+=1; cur=arr[cur][1]
@@ -385,21 +363,20 @@ class Fabits:
         self.show(self.ls,f'{arr},head={hd}','green'); self.show(self.ls,'>>>','purple')
     def mazepl(self):
         self.mz=tkinter.Toplevel(self.rt); self.mz.title('迷宫可视化')
-        self.mz.transient(self.rt); self.mz.geometry(self.calsz(16,4))
-        self.lb=ttk.Label(self.mz,text='迷宫设置'); self.emp=ttk.Frame(self.mz)
-        self.btn4=ttk.Button(self.emp,text='生成',command=self.gen)
+        self.mz.transient(self.rt); self.mz.geometry(self.calsz(16,4,'mazepl'))
+        self.mzemp=ttk.Frame(self.mz); self.lb=ttk.Label(self.mzemp,text='迷宫设置')
+        self.emp=ttk.Frame(self.mz); self.btn4=ttk.Button(self.emp,text='生成',command=self.gen)
         self.btn5=ttk.Button(self.emp,text='解',command=self.slv)
-        self.btn6=ttk.Button(self.emp,text='退出',command=lambda: self.winqut(self.mz))
+        self.btn6=ttk.Button(self.emp,text='退出',command=lambda: self.winqut(self.mz,'mazepl'))
         self.btn4.config(width=8); self.btn5.config(width=8,state='disabled')
         self.btn6.config(width=8); self.memp1.pack_forget()
         self.cvs.pack(fill='both',expand=True); self.lb.pack(expand=True)
-        self.emp.pack(fill='x',expand=True); self.btn4.pack(side='left',expand=True)
-        self.btn5.pack(side='left',expand=True); self.btn6.pack(side='left',expand=True)
-        self.mz.grab_set(); self.mz.wait_window(); self.cvs.pack_forget(); self.restul()
-        self.memp1.pack(side='bottom',fill='both',expand=True)
-    @staticmethod
-    def mb(icn,tp,tle,msg):
-        mbt=tkinter.messagebox.Message(icon=mb[icn],type=mb[tp],title=tle,message=msg)
+        self.mzemp.pack(fill='both',expand=True); self.emp.pack(fill='both',expand=True)
+        self.btn4.pack(side='left',expand=True); self.btn5.pack(side='left',expand=True)
+        self.btn6.pack(side='left',expand=True); self.mz.grab_set(); self.mz.wait_window()
+        self.cvs.pack_forget(); self.restul(); self.memp1.pack(side='bottom',fill='both',expand=True)
+    def mb(self,icn,tp,tle,msg):
+        mbt=tkinter.messagebox.Message(icon=self.cfg['mb'][icn],type=self.cfg['mb'][tp],title=tle,message=msg)
         res=mbt.show(); return res
     def mngrd(self,i):
         j=i-1 if i%2 else i+1
@@ -417,7 +394,7 @@ class Fabits:
         if self.chg:
             svst=self.mb('q','ync','关闭文件时保存','上一个未保存的内容将会丢失,是否保存?')
             if svst=='cancel' or (svst=='yes' and self.savf()):
-                self.rt.title(f'{til} - {self.txflnm}*'); return
+                self.rt.title(f"{self.cfg['til']} - {self.txflnm}*"); return
         if ext:
             self.rsflnm=self.dlg(1,'打开',('All text files','*.*'))
             if self.rsflnm:
@@ -427,28 +404,29 @@ class Fabits:
                 fl.seek(0); data=fl.readlines()
                 for i in data: self.tetr.insert('insert',i.decode(enc))
                 fl.close(); self.nfl=0
-                self.rt.title(f'{til} - {self.txflnm}')
-            else: self.rt.title(f'{til} - {self.txflnm}'); return
+                self.rt.title(f"{self.cfg['til']} - {self.txflnm}")
+            else: self.rt.title(f"{self.cfg['til']} - {self.txflnm}"); return
         else:
             self.nfl=1; self.txflnm='未命名文件'; self.tetr.delete('1.0','end')
             if nda:
                 byt=self.txcbtb(None,1,0,1)
                 if byt!=-1: self.tetr.insert('insert',byt)
-        self.chg=0; self.rt.title(f'{til} - {self.txflnm}')
+        self.chg=0; self.rt.title(f"{self.cfg['til']} - {self.txflnm}")
     def pginit(self,tx,tol):
-        self.pgm=tkinter.Toplevel(self.rt); self.pgm.geometry(self.calsz(16,14))
-        self.pgm.transient(self.rt); self.pgm.title(tx); 
-        self.pgl=ttk.Label(self.pgm,text='0.00%')
-        self.pgb=ttk.Progressbar(self.pgm,length=15*self.scr); self.pgsb=ttk.Scrollbar(self.pgm)
-        self.pgt=ttk.Treeview(self.pgm,columns=('opt',),show='tree')
+        self.pgm=tkinter.Toplevel(self.rt); self.pgm.geometry(self.calsz(16,14,'pginit'))
+        self.pgm.transient(self.rt); self.pgm.title(tx);
+        self.pgf=ttk.Frame(self.pgm); self.pgl=ttk.Label(self.pgf,text='0.00%')
+        self.pgb=ttk.Progressbar(self.pgf,length=15*self.scr)
+        self.pgsb=tkinter.Scrollbar(self.pgf)
+        self.pgt=ttk.Treeview(self.pgf,columns=('opt',),show='tree')
         self.pgt.column('#0',width=0,stretch=False)
         self.pgt.column('opt',width=15*self.scr,anchor='w')
         self.pgt.config(yscrollcommand=self.pgsb.set)
         self.pgsb.config(command=self.pgt.yview)
-        for i in self.clr: self.pgt.tag_configure(i,foreground=i)
+        for i in self.clr: self.pgt.tag_configure(i,foreground=i,background=self.bg)
         self.pgb['maximum']=tol; self.tol=tol/100
-        self.pgl.pack(); self.pgb.pack()
-        self.pgsb.pack(side='right',fill='y'); self.pgt.pack(fill='both',expand=True)
+        self.pgl.pack(); self.pgb.pack(); self.pgsb.pack(side='right',fill='y')
+        self.pgt.pack(fill='both',expand=True); self.pgf.pack(fill='both',expand=True)
     def pgu(self,num,tx,clr):
         self.pgl.config(text=f'{num/self.tol:.2f}%'); self.pgb['value']=num
         if tx: self.show(self.pgt,tx,clr)
@@ -464,7 +442,7 @@ class Fabits:
                 for k in range(ln): immsk[i,j,k]=next(gn)
             self.pgu(i+1,f'已加密{i+1}/{h}','cyan')
         pic=Image.fromarray(numpy.bitwise_xor(pix,immsk))
-        self.rt.after(250); self.winqut(self.pgm)
+        self.rt.after(250); self.winqut(self.pgm,'pginit')
         self.show(self.ls,'(3/3)保存','cyan')
         new=self.dlg(2,'保存',('Image files','.png'))
         if not new: return
@@ -480,16 +458,39 @@ class Fabits:
             if i>1 and int(val)>lim[i-2]:
                 self.mb('w','o','提示','请检查输入内容'); return
             res[i]=int(val)
-        self.winqut(self.progd); self.thr(lambda: self.pulpro(res))
+        self.winqut(self.progd,'pulprogd'); self.thr(lambda: self.pulpro(res))
     def prefn(self):
-        self.winqut=lambda arg: arg.destroy()
         self.pnm=lambda fn: tp.join(self.pth,fn)
         self.scl=lambda tag: (tag.focus_set(),tag.selection_range(0,'end'))
+    def prefr(self):
+        prf=tkinter.Toplevel(self.rt); prf.transient(self.rt); prf.geometry(self.calsz(16,6,'prefr'))
+        prf.title('选项'); self.fui=tkinter.IntVar(value=self.cfg['bgidx'])
+        prfemp=[ttk.Frame(prf) for i in range(4)]
+        prfl=ttk.Label(prfemp[0],text='部分选项需要重启后生效')
+        prfui=ttk.Label(prfemp[1],text='UI流转(夜间模式)显示模式')
+        rdbs=['']*3; lan=['白天模式','夜间模式','流转模式']
+        for i in range(3):
+            rdbs[i]=ttk.Radiobutton(prfemp[2],text=lan[i],variable=self.fui,value=i)
+            rdbs[i].pack(side='left',expand=True)
+        subtn=ttk.Button(prfemp[3],text='应用',command=self.submt)
+        canbtn=ttk.Button(prfemp[3],text='取消',command=lambda: self.winqut(prf,'prefr'))
+        prfl.pack(expand=True); prfui.pack(expand=True)
+        subtn.pack(side='left',expand=True); canbtn.pack(side='left',expand=True)
+        for i in range(4): prfemp[i].pack(fill='both',expand=True)
+    def preset(self):
+        try:
+            self.scr=ctypes.windll.shcore.GetScaleFactorForDevice(0)//5
+            ctypes.windll.shcore.SetProcessDpiAwareness(1)
+        except: self.scr=20
+        try:
+            fl=open('Config.json','r',encoding='utf-8')
+            self.cfg=json.load(fl); fl.close()
+        except: tkinter.messagebox.showerror('错误','无效的Config.json'); return -1
     def prit(self,st=[]):
-        self.show(self.et,f'{knd[self.kd]}(+{self.lvl[4]})','cyan')
+        self.show(self.et,f"{self.cfg['knd'][self.kd]}(+{self.lvl[4]})",'cyan')
         self.show(self.et,self.mn,'blue')
         for i in range(self.sisl):
-            nm=name[self.sis[i]]; clr='red' if i in st else 'green'
+            nm=self.cfg['name'][self.sis[i]]; clr='red' if i in st else 'green'
             if nm[-1]==' ':
                 self.show(self.et,f'{nm[:-1]}+{round(self.lvl[i]+0.05,1)}',clr)
             else: self.show(self.et,f'{nm}+{round(self.lvl[i]+0.05,1)}%',clr)
@@ -497,25 +498,25 @@ class Fabits:
     def pul(self,n):
         for i in range(n):
             ran,tup=random.random(),random.random()
-            if ran<=pro_lst5[self.put5]:
+            if ran<=self.cfg['pro_lst5'][self.put5]:
                 if self.true_up5: self.show(self.et,self.ups[0],'yellow'); self.true_up5=0
-                elif tup<=tu_lst[self.fu]:
+                elif tup<=self.cfg['tu_lst'][self.fu]:
                     self.show(self.et,self.ups[0],'yellow'); self.true_up5,self.fu=0,0
                 else:
-                    it=random.choice(self.dtm['fups5']+self.dtm['wpns5'])
+                    it=random.choice(self.cfg['fups5']+self.cfg['wpns5'])
                     self.show(self.et,it,'yellow'); self.show(self.et,'歪','red')
                     self.true_up5,self.fu=1,self.fu+1
                 self.put5,self.put4=0,self.put4+1
-            elif ran<=pro_lst5[self.put5]+pro_lst4[self.put4]:
+            elif ran<=self.cfg['pro_lst5'][self.put5]+self.cfg['pro_lst4'][self.put4]:
                 if tup<=0.5 or self.true_up4:
                     self.show(self.et,random.choice(self.ups[1:]),'purple')
                     self.true_up4=0
                 else:
-                    it=random.choice(self.dtm['ups4']+self.dtm['wpns4'])
+                    it=random.choice(self.cfg['ups4']+self.cfg['wpns4'])
                     self.show(self.et,it,'purple'); self.true_up4=1
                 self.put5,self.put4=self.put5+1,0
             else:
-                self.show(self.et,random.choice(self.dtm['wpns3']),'blue')
+                self.show(self.et,random.choice(self.cfg['wpns3']),'blue')
                 self.put5,self.put4=self.put5+1,self.put4+1
         self.show(self.et,f'垫{self.put5}发','cyan'); self.show(self.et,'>>>','purple')
     def pulpro(self,vals):
@@ -526,7 +527,7 @@ class Fabits:
         for i in range(pb):
             for j in range(_len):
                 ups,puts,false_up,true_up=lst[j]; pro=proes[j]
-                ups=min(ups,50); pros=pro_lst5[puts]; tu_pro=tu_lst[false_up]
+                ups=min(ups,50); pros=self.cfg['pro_lst5'][puts]; tu_pro=self.cfg['tu_lst'][false_up]
                 dic[ups,puts+1,false_up,true_up]+=pro*(1-pros)
                 if true_up: dic[ups+1,0,false_up,0]+=pro*pros
                 else:
@@ -547,13 +548,13 @@ class Fabits:
         for i in range(ed,0,-1):
             if res[i]<0.1: res[i-1]+=res[i]
             else: ed=i; break
-        self.rt.after(250); self.winqut(self.pgm)
+        self.rt.after(250); self.winqut(self.pgm,'pginit')
         self.show(self.ls,'UP数 概率','purple')
         for i in range(st,ed+1): self.show(self.ls,f'{i:>2d}{res[i]:7.2f}%','purple')
         self.show(self.ls,'>>>','purple')
     def pulprogd(self):
         self.progd=tkinter.Toplevel(self.rt); self.progd.transient(self.rt)
-        self.progd.geometry(self.calsz(24,9)); self.progd.title('抽卡概率计算')
+        self.progd.geometry(self.calsz(24,9,'pulprogd')); self.progd.title('抽卡概率计算')
         probtntx=['原石数'+' '*13,'粉球数'+' '*13,'垫池数(0-89)    ','已经连歪数(0-3)','是否大保底(0/1)']
         self.prem=[ttk.Frame(self.progd) for i in range(6)]
         self.prolb,self.proinp=['']*5,['']*5
@@ -564,7 +565,7 @@ class Fabits:
             self.proinp[i].pack(side='left',expand=True)
         self.proys=ttk.Button(self.prem[5]); self.prono=ttk.Button(self.prem[5])
         self.proys.config(text='确认',command=self.prconf)
-        self.prono.config(text='退出',command=lambda: self.winqut(self.progd))
+        self.prono.config(text='退出',command=lambda: self.winqut(self.progd,'pulprogd'))
         self.proys.pack(side='left',expand=True); self.prono.pack(side='left',expand=True)
         for i in range(6): self.prem[i].pack(fill='both',expand=True)
     def putvar(self,val): self.var=val; self.tmp.destroy()
@@ -620,6 +621,11 @@ class Fabits:
             if not pos: pos=self.tetr.search(schtx,'1.0',cur,nocase=ncs)
         if cnt: self.cchg(); self.mb('i','o','替换',f'已成功替换{cnt}处文本')
         else: self.mb('i','o','提示','找不到相应的文本')
+    def savcfg(self):
+        self.cfg['scr']=self.scr; self.cfg['scwth']=self.scwth
+        self.cfg['schgt']=self.schgt; fl=open('Config.json','w',encoding='utf-8')
+        json.dump(self.cfg,fl,indent=4,ensure_ascii=False); fl.close()
+        if self.reboot: now=sys.executable; subprocess.Popen([now]+sys.argv); sys.exit(0)
     def savf(self,at=0,nda=0):
         if not self.ofl: return
         if nda: ot=self.txcbtb(self.tetr.get('1.0','end'),0,1,0); return
@@ -627,7 +633,7 @@ class Fabits:
             self.rsflnm=self.dlg(2,'保存',('All text files','*.*'))
             if not self.rsflnm: return -1
             if not tp.splitext(self.rsflnm)[1]: self.rsflnm+='.txt'
-            self.txflnm=self.rsflnm; self.rt.title(f'{til} - {self.txflnm}')
+            self.txflnm=self.rsflnm; self.rt.title(f"{self.cfg['til']} - {self.txflnm}")
         fl=open(self.txflnm,'w',encoding='utf-8',newline='\n'); self.nfl=self.chg=0
         txres=self.tetr.get('1.0','end'); fl.write(txres); fl.close()
     def sch(self,dire,al=False):
@@ -649,7 +655,7 @@ class Fabits:
     def schgd(self):
         if not self.ofl: return
         self.schtl=tkinter.Toplevel(self.rt); self.schtl.transient(self.rt)
-        self.schtl.geometry(self.calsz(18,7)); self.schtl.title('查找与替换')
+        self.schtl.geometry(self.calsz(18,7,'schgd')); self.schtl.title('查找与替换')
         scs=[ttk.Frame(self.schtl) for i in range(5)]; self.lastsc=('','')
         concm={'l':lambda idx,arg: ttk.Label(scs[idx],text=arg),
                'e':lambda idx,arg: ttk.Entry(scs[idx],width=30),
@@ -662,7 +668,7 @@ class Fabits:
         for i in wid: self.consf[lcon]=concm[i[0]](int(i[1]),i[2:]); lcon+=1
         btncmd=[lambda: self.sch(dire=False),lambda: self.sch(dire=True),
                 lambda: self.sch(dire=True,al=True),self.rplc,self.rplcal,
-                lambda: (self.delmark(),self.winqut(self.schtl))]
+                lambda: (self.delmark(),self.winqut(self.schtl,'schgd'))]
         for i in range(6): self.consf[i+6].config(command=btncmd[i])
         pck=lambda tag: tag.pack(side='left',expand=True); list(map(pck,self.consf))
         for i in range(5): scs[i].pack(fill='both',expand=True)
@@ -687,6 +693,16 @@ class Fabits:
             if not self.maze[x+tmp[i][0]*2][y+tmp[i][1]*2]: stk[top][2]=i+1; continue
             top+=1; stk[top]=[x+tmp[i][0]*2,y+tmp[i][1]*2,0]
         self.btn4.config(state='normal')
+    def style(self):
+        ftsz=round(0.4*self.scr); stl=ttk.Style(self.rt)
+        if self.bgidx: stl.theme_use('clam')
+        stl.configure('.',background=self.bgin,fieldbackground=self.bg,foreground=self.txchrc)
+        stl.configure('Treeview',font=('TkDefaultFont',ftsz,'bold'),rowheight=2.5*ftsz)
+    def submt(self):
+        self.cfg['bgidx']=self.fui.get()
+        if self.mb('q','yn','需要重启','是否立即重启以应用设置?')=='yes':
+            if self.clsf()==-1: return
+            self.reboot=1; self.winqut(self.rt,'Fabits')
     @staticmethod
     def thr(fun): tsk=threading.Thread(target=fun); tsk.start()
     def txcbtb(self,byt,opn,clos,ecpt,frmopn=''):
@@ -730,12 +746,13 @@ class Fabits:
         self.show(self.ls,'进程已结束','red'); self.show(self.ls,'>>>','purple')
     def txmng(self,fun):
         self.mng=tkinter.Toplevel(self.rt); self.mng.transient(self.rt)
-        self.mng.title('文本处理'); self.mng.geometry(self.calsz(24,10))
+        self.mng.title('文本处理'); self.mng.geometry(self.calsz(24,10,'txmng'))
         self.opclvr=[tkinter.IntVar(value=0),tkinter.IntVar(value=0)]
         mngemp=[ttk.Frame(self.mng) for i in range(5)]
         self.wids=[['','',''] for i in range(4)]
-        mainlb=[ttk.Label(self.mng,text='打开方式'),ttk.Label(self.mng,text='保存方式')]
-        self.args=['文本输入','文件打开','文本输出','文件保存']
+        lbemp=[ttk.Label(self.mng),ttk.Label(self.mng)]
+        mainlb1,mainlb2=ttk.Label(lbemp[0],text='打开方式'),ttk.Label(lbemp[1],text='保存方式')
+        mainlb1.pack(); mainlb2.pack(); self.args=['文本输入','文件打开','文本输出','文件保存']
         for i in range(4):
             mngrd=lambda k=i: self.mngrd(k)
             mngscl=lambda k=i: self.scl(tag=self.wids[k][1])
@@ -749,10 +766,10 @@ class Fabits:
         for i in self.wids:
             for j in range(3): i[j].pack(side='left',expand=True)
         mngbtn1=ttk.Button(mngemp[4],text='生成',command=lambda: self.txdel(fun))
-        mngbtn2=ttk.Button(mngemp[4],text='退出',command=lambda: self.winqut(self.mng))
+        mngbtn2=ttk.Button(mngemp[4],text='退出',command=lambda: self.winqut(self.mng,'txmng'))
         mngbtn1.pack(side='left',expand=True); mngbtn2.pack(side='left',expand=True)
         for i in range(5):
-            if i in [0,2]: mainlb[i//2].pack(expand=True)
+            if i in [0,2]: lbemp[i//2].pack(fill='both',expand=True)
             mngemp[i].pack(fill='both',expand=True)
         self.wids[1][1].config(state='disabled')
         self.wids[3][1].config(state='disabled')
@@ -769,14 +786,14 @@ class Fabits:
             try: self.tetr.edit_undo()
             except: self.mb('w','o','提示','已经是最后一层')
     def upd(self):
-        lvurl=urp1.format(f'api.{urp2}/repos')+'releases/latest'
+        lvurl=self.cfg['urp1'].format(f"api.{self.cfg['urp2']}/repos")+'releases/latest'
         try:
             resp=requests.get(lvurl)
             if resp.status_code==200:
                 data=resp.json(); latvsn=data['tag_name']
-                if latvsn==curvsn: self.mb('i','o','提示','当前已经是最新版本')
+                if latvsn==self.cfg['curvsn']: self.mb('i','o','提示','当前已经是最新版本')
                 elif self.mb('i','yn','提示','有新版本!是否前往项目仓库下载?')=='yes':
-                    webbrowser.open(urp1.format(urp2)+'releases')
+                    webbrowser.open(self.cfg['urp1'].format(self.cfg['urp2'])+'releases')
             elif self.mb('w','yn','无法连接服务器','是否重试?')=='yes': self.upd()
         except OSError as e:
             if self.mb('w','yn','网络连接中断','是否重试?')=='yes': self.upd()
@@ -785,14 +802,14 @@ class Fabits:
         if self.lvl[4]==20: self.btn2.config(state='disabled')
         if self.sisl==3:
             while self.sisl!=4:
-                si=random.choices(range(len(sipro)),weights=sipro)[0]
-                if si not in self.sis and name[si]!=self.mn:
-                    self.lvl[self.sisl]=siup[si]*random.choice(siupro)
+                si=random.choices(range(len(self.cfg['sipro'])),weights=self.cfg['sipro'])[0]
+                if si not in self.sis and self.cfg['name'][si]!=self.mn:
+                    self.lvl[self.sisl]=self.cfg['siup'][si]*random.choice(self.cfg['siupro'])
                     self.sis[self.sisl]=si; self.sisl+=1
             self.prit(st=[3])
         else:
             up=random.randrange(4)
-            self.lvl[up]+=siup[self.sis[up]]*random.choice(siupro)
+            self.lvl[up]+=self.cfg['siup'][self.sis[up]]*random.choice(self.cfg['siupro'])
             self.prit(st=[up])
     def upth(self,p):
         getpth=self.dlg((p+1)//2,self.args[p][2:],('All text files','*.*'))
@@ -804,12 +821,16 @@ class Fabits:
         if not self.pth: return
         names=[i for i in os.listdir(self.pth) if i.lower().endswith('.mp4')]
         self.show(self.ls,'(2/2)重命名','cyan'); lnms=len(names)
-        if names: self.pginit('视频重命名',lnms)
-        for i in range(lnms):
-            t=time.localtime(tp.getctime(self.pnm(names[i])))
-            new=f"{time.strftime('%Y%m%d_%H%M%S',t)}A.mp4"
-            self.pgu(i+1,f'{names[i]} -> {new}','cyan')
-            os.rename(self.pnm(names[i]),self.pnm(new))
-        self.rt.after(250); self.winqut(self.pgm)
+        if lnms:
+            self.pginit('视频重命名',lnms)
+            for i in range(lnms):
+                t=time.localtime(tp.getctime(self.pnm(names[i])))
+                new=f"{time.strftime('%Y%m%d_%H%M%S',t)}A.mp4"
+                self.pgu(i+1,f'{names[i]} -> {new}','cyan')
+                os.rename(self.pnm(names[i]),self.pnm(new))
+            self.rt.after(250); self.winqut(self.pgm,'pginit')
         self.show(self.ls,'进程已结束','red'); self.show(self.ls,'>>>','purple')
+    def winqut(self,arg,ky):
+        a,b,c,d=arg.winfo_width(),arg.winfo_height(),arg.winfo_x(),arg.winfo_y()
+        self.cfg[ky]=f'{a}x{b}+{c}+{d}'; arg.destroy()
 if __name__=='__main__': fabits=Fabits()
