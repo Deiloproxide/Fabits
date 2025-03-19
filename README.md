@@ -45,7 +45,7 @@
 ![](https://github.com/Deiloproxide/Fabits/blob/main/Na.png?raw=true)
 ### [官网传送门](https://nahida520.love)
 ### [B站传送门](https://space.bilibili.com/500203556)
-### 邮箱：`2900029594@qq.com`
+### 邮箱：`246002083@nbu.edu.cn`
 # 版本更新历史记录
 ## 2025-02-16modified
 ### 说明：
