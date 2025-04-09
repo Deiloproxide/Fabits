@@ -1,4 +1,4 @@
-import chardet,ctypes,hashlib,multiprocessing,numpy,json,os,random
+import chardet,ctypes,hashlib,math,multiprocessing,numpy,json,os,random
 import requests,subprocess,sys,threading,time,tkinter,turtle,webbrowser
 from tkinter import filedialog,ttk; from PIL import Image
 lst=numpy.zeros(shape=(38000,4),dtype=int)
@@ -57,13 +57,14 @@ class Fabits:
         '算法(A)':{'同分异构体数量':self.iso,'链表冒泡排序':self.lnksrt,
             '最大环长度':self.ring,'求解罗马数字':self.rome},
         '批处理(B)':{'补齐缺失后缀':lambda: self.thr(self.adlsnd),
-            '图片颜色替换':lambda: self.thr(self.clrplc),'图片排序':lambda: self.thr(self.imgsrt),
-            '图片加解密':lambda: self.thr(self.picpt),'生成组合字符':lambda: self.txmng(self.rndchr),
-            '解unicode':lambda: self.txmng(self.ucd),'视频重命名':lambda: self.thr(self.vdornm),
+            '图片颜色替换':lambda: self.thr(self.clrplc),'编unicode':lambda: self.txmng(self.eucd),
+            '图片排序':lambda: self.thr(self.imgsrt),'图片加解密':lambda: self.thr(self.picpt),
+            '生成组合字符':lambda: self.txmng(self.rndchr),'解unicode':lambda: self.txmng(self.ucd),
+            '视频重命名':lambda: self.thr(self.vdornm),
             '文本加解密':lambda: self.txmng(lambda itx: self.txcbtb(itx,0,0,0))},
         '网络(I)':{'官网':lambda: webbrowser.open(self.cfg['ofwb']),
             '项目仓库':lambda: webbrowser.open(self.cfg['hub']),'版本检测':self.upd},
-        '工具(T)':{'计算器':self.calc,'代码混合':self.cdobf,'抽卡模拟器':self.conpuw,
+        '工具(T)':{'科学计算器':self.calc,'代码混合':self.cdobf,'抽卡模拟器':self.conpuw,
             '圣遗物强化':self.itsth,'迷宫可视化':self.mazepl,'抽卡概率计算':self.pulprogd},
         '设置(S)':{'清屏':self.clear,'帮助':lambda: self.thr(self.hlp),'图标':self.ics,'选项':self.prefr}}
         self.mnu=tkinter.Menu(self.rt); self.rt.config(menu=self.mnu)
@@ -75,7 +76,105 @@ class Fabits:
             if not i: return
         self.conbtn[0].config(state='normal'); self.conbtn[1].config(state='normal')
     def calc(self):
-        pass
+        self.cal=self.crttpl('科学计算器',32,12,'calc',1)
+        self.calmnu=tkinter.Menu(self.cal); self.cal.config(menu=self.calmnu)
+        calsmu=tkinter.Menu(self.calmnu,tearoff=0,bg=self.bgin,fg=self.txchrc)
+        self.calmnu.add_cascade(label='选项(O)',menu=calsmu)
+        calsmu.add_command(label='退出',command=lambda: self.winqut(self.cal,'calc'))
+        self.calshw,caltx=[None]*2,[' ','I']
+        self.calcmp=[ttk.Frame(self.cal) for i in range(8)]; self.res=self.m=0
+        sgn=lambda: self.show(self.ls,'>>>','purple'); self.expsyn,self.expidx=[],0
+        for i in range(2):
+            self.calshw[i]=ttk.Label(self.calcmp[i],text=caltx[i],anchor='e')
+            self.calshw[i].pack(fill='both',expand=True)
+        self.calbtns=[[None]*7 for i in range(7)]
+        self.sig=[['sin','log','!','<','>','←','AC'],['cos','P','C','√','(',')','÷'],
+                  ['tan','^','7','8','9','e','×'],['arcsin','mod','4','5','6','π','-'],
+                  ['arccos','|x|','1','2','3','m','+'],['arctan','M',',','0','.','ANS','=']]
+        self.funs={'sin':math.sin,'cos':math.cos,'tan':math.tan,'arcsin':math.asin,
+              'arccos':math.acos,'arctan':math.atan,'ln':math.log,
+              'log':lambda a,b=math.e: math.log(a,b),'√':lambda a,b=2: a**(1/b),
+              'mod':lambda a,b: a%b}
+        self.bas=[{'C':lambda a,b: math.gamma(a+1)/math.gamma(b+1)/math.gamma(a-b+1),
+                 'P':lambda a,b: math.gamma(a+1)/math.gamma(a-b+1)},
+                {'^':lambda a,b: a**b},{'×':lambda a,b: a*b,'÷': lambda a,b: a/b},
+                {'+': lambda a,b=0: a+b,'-': lambda a,b=None: -a if b is None else a-b}]
+        for i in range(6):
+            for j in range(7):
+                self.calbtns[i][j]=ttk.Button(self.calcmp[i+2],text=self.sig[i][j])
+                self.calbtns[i][j].config(command=lambda k=self.sig[i][j]: self.syn(k))
+                self.calbtns[i][j].pack(side='left',fill='both',expand=True)
+        for i in range(8): self.calcmp[i].pack(fill='both',expand=True)
+    def cald(self,syn):
+        i,lsyn,ressyn,rs,dig,digs=0,len(syn),[None]*100,0,'',1
+        nums,consts='0123456789.',{'m':self.m,'ANS':self.res,'π':math.pi,'e':math.e}
+        for i in range(lsyn):
+            if syn[i] in nums: dig+=syn[i]
+            elif syn[i] in consts: digs*=consts[syn[i]]
+            else:
+                if dig or isinstance(digs,float):
+                    digs*=float(dig) if dig else 1.0; ressyn[rs]=digs; rs+=1
+                ressyn[rs]=syn[i]; rs+=1; dig,digs='',1
+        if dig or isinstance(digs,float):
+            digs*=float(dig) if dig else 1.0; ressyn[rs]=digs; rs+=1
+        return ressyn[:rs]
+    def calk(self,expsyn):
+        stk,top,res=[[None,[None]*100,0] for i in range(20)],0,None
+        for i in range(len(expsyn)):
+            if expsyn[i]=='(': top+=1; stk[top][0]=i
+            elif expsyn[i]==')':
+                if top>0 and expsyn[stk[top][0]]=='(':
+                    res=self.calsyn(stk[top][1][:stk[top][2]]); stk[top][2]=0
+                    top-=1; stk[top][1][stk[top][2]]=res; stk[top][2]+=1
+                else: raise SyntaxError
+            elif expsyn[i]=='|':
+                if top>0 and expsyn[stk[top][0]]=='|':
+                    res=abs(self.calsyn(stk[top][1][:stk[top][2]])); stk[top][2]=0
+                    top-=1; stk[top][1][stk[top][2]]=res; stk[top][2]+=1
+                else: top+=1; stk[top][0]=i
+            else: stk[top][1][stk[top][2]]=expsyn[i]; stk[top][2]+=1
+            if top>=20: raise OverflowError
+        if top!=0: raise SyntaxError
+        return self.calsyn(stk[top][1][:stk[top][2]])
+    def calsyn(self,expsyn):
+        el=len(expsyn); tl,rl,tsyn,rsyn,stc=el,0,[None]*100,[None]*100,True
+        for i in range(el):
+            tsyn[i]=expsyn[i]
+            if expsyn[i]==',': return self.calsyn(expsyn[:i]),self.calsyn(expsyn[i+1:el])
+        while stc:
+            rl,mul=0,1
+            for i in range(tl):
+                if isinstance(tsyn[i],float): mul*=tsyn[i]
+                else:
+                    if isinstance(mul,float): rsyn[rl]=mul; rl+=1; mul=1
+                    rsyn[rl]=tsyn[i]; rl+=1
+            if isinstance(mul,float): rsyn[rl]=mul; rl+=1
+            tl,fls,stc=0,False,False
+            for i in range(rl):
+                if fls: fls=False; continue
+                if i<rl-1 and rsyn[i+1]=='!':
+                    if isinstance(rsyn[i],float):
+                        tsyn[tl]=math.gamma(rsyn[i]+1); tl+=1; stc=fls=True
+                    else: tsyn[tl]=rsyn[i]; tl+=1
+                elif rsyn[i] in self.funs:
+                    if isinstance(rsyn[i+1],float):
+                        tsyn[tl]=self.funs[rsyn[i]](rsyn[i+1]); tl+=1; stc=fls=True
+                    elif isinstance(rsyn[i+1],tuple):
+                        tsyn[tl]=self.funs[rsyn[i]](rsyn[i+1][0],rsyn[i+1][1]); tl+=1; stc=fls=True
+                    else: tsyn[tl]=rsyn[i]; tl+=1
+                else: tsyn[tl]=rsyn[i]; tl+=1
+        for i in self.bas:
+            fls,rl=0,0
+            for j in range(tl):
+                if fls: fls-=1; continue 
+                if j==0 and tsyn[j] in i:
+                    rsyn[rl]=i[tsyn[j]](tsyn[j+1]); rl+=1; fls=1
+                elif tsyn[j+1] in i: rsyn[rl]=i[tsyn[j+1]](tsyn[j],tsyn[j+2]); rl+=1; fls=2
+                else: rsyn[rl]=tsyn[j]; rl+=1
+            for j in range(rl): tsyn[j]=rsyn[j]
+            tl=rl
+        if rl==1: return rsyn[0]
+        else: raise SyntaxError
     def calsz(self,w,h,ky):
         size=self.cfg.get(ky,'')
         if size: return size
@@ -87,7 +186,7 @@ class Fabits:
     def cchg(self):
         if not self.chg: self.chg=1; self.rt.title(f"{self.cfg['til']} - {self.txflnm}*")
     def cdchk(self):
-        fls=[None]*3
+        fls=['']*3
         for i in range(3):
             fl=self.cdobj[i][1].get()
             if fl: fls[i]=fl
@@ -178,7 +277,7 @@ class Fabits:
         self.up=[tkinter.Menu(self.pum,tearoff=0,bg=self.bgin,fg=self.txchrc) for i in range(4)]
         for i in range(4): self.pum.add_cascade(label=uptx[i],menu=self.up[i])
         dtm=['ups5','ups4','fups5','wpns5','wpns4','wpns3']
-        self.ups,self.put5,self.put4,self.true_up4,self.true_up5,self.fu=[None]*4,0,0,0,0,0
+        self.ups,self.put5,self.put4,self.true_up4,self.true_up5,self.fu=['']*4,0,0,0,0,0
         for i in dtm:
             for j in self.cfg[i]:
                 if i=='ups5': self.up[0].add_command(label=j,command=lambda k=j: self.adups(k,0))
@@ -209,6 +308,10 @@ class Fabits:
         elif n==1: dl=filedialog.askopenfilename(title=tle,filetypes=(flt,))
         else: dl=filedialog.asksaveasfilename(title=tle,filetypes=(flt,))
         return dl
+    def eucd(self,itx):
+        litx=len(itx); otx=['']*litx
+        for i in range(litx): otx[i]=f'\\u{ord(itx[i]):04x}'
+        return ''.join(otx)
     def gen(self,arg):
         self.ln,self.wd,self.bx,self.by,self.ex,self.ey=arg
         self.sz=min(12*self.scr/self.ln,12*self.scr/self.wd)
@@ -637,7 +740,7 @@ class Fabits:
     def rndchr(self,itx):
         try: n=int(self.inp('输入字符密度'))
         except: return ''
-        lst=list(range(768,880))+list(range(1155,1162)); io,otx=0,[None]*len(itx)*(n+1)
+        lst=list(range(768,880))+list(range(1155,1162)); io,otx=0,['']*len(itx)*(n+1)
         for i in itx:
             otx[io]=i; io+=1; chs=map(chr,random.choices(lst,k=n))
             for j in chs: otx[io]=j; io+=1
@@ -774,6 +877,29 @@ class Fabits:
                 fl.write(self.tetr.get('1.0','end'))
                 fl.close(); self.rbtarg=self.txflnm
             self.reboot=1; self.winqut(self.rt,'Fabits')
+    def syn(self,k):
+        if k=='M': self.m=self.res; return
+        elif k=='=':
+            if not self.expsyn: return
+            try:
+                res=round(self.calk(self.cald(self.expsyn)),12)
+                self.calshw[0].config(text=str(res)); self.res=res
+            except ArithmeticError: self.calshw[0].config(text='数学错误')
+            except ValueError: self.calshw[0].config(text='数学错误')
+            except OverflowError: self.calshw[0].config(text='堆栈错误')
+            except: self.calshw[0].config(text='语法错误')
+            return
+        if k=='AC': self.expidx,self.expsyn=0,[]
+        elif k=='←':
+            if self.expidx!=0: self.expsyn.pop(self.expidx-1); self.expidx-=1
+        elif k=='<':
+            if self.expidx>0: self.expidx-=1
+        elif k=='>':
+            if self.expidx<len(self.expsyn): self.expidx+=1
+        elif k=='|x|': [self.expsyn.insert(self.expidx,'|') for i in range(2)]; self.expidx+=1
+        else: self.expsyn.insert(self.expidx,k); self.expidx+=1
+        newexp=''.join(self.expsyn[:self.expidx]+['I']+self.expsyn[self.expidx:])
+        self.calshw[0].config(text=' '); self.calshw[1].config(text=newexp)
     def txcbtb(self,byt,opn,clos,ecpt,opnfl=''):
         if opn:
             if opnfl: flnm=opnfl
@@ -803,7 +929,8 @@ class Fabits:
             data=fl.read(); fl.close(); enc=chardet.detect(data)['encoding']
             itx=data.decode(enc)
         otx=fun(itx)
-        if not self.opclvr[1].get(): self.wids[4][1].insert('end',otx)
+        if not self.opclvr[1].get():
+            self.wids[4][1].delete(0,'end'); self.wids[4][1].insert('end',otx)
         else:
             new=self.wids[5][1].get()
             if not new: return
@@ -840,7 +967,7 @@ class Fabits:
         for i in range(7): mngemp[i].pack(fill='both',expand=True)
     @staticmethod
     def ucd(itx):
-        litx=len(itx); io,otx,i=0,[None]*litx,0
+        litx=len(itx); io,otx,i=0,['']*litx,0
         while i<litx:
             if litx-i>5 and itx[i:i+2]=='\\u': otx[io]=chr(int(itx[i+2:i+6],16)); i+=6
             else: otx[io]=itx[i]; i+=1
