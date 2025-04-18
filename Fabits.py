@@ -9,7 +9,7 @@ class Fabits:
         self.preset(); self.check(); self.rt.geometry(self.calsz(64,36,'Fabits'))
         self.rt.deiconify(); self.prefn(); self.rt.title(self.data['til'])
         self.admnu(); self.adcon(); self.ics1(self.cfg.get('ani',1))
-        self.rt.mainloop(); self.savcfg()
+        self.rt.mainloop()
     def adcon(self):
         self.cvs=tkinter.Canvas(self.rt); sc=turtle.TurtleScreen(self.cvs)
         self.tl=turtle.RawTurtle(sc); self.memp1=ttk.Frame(self.rt)
@@ -71,10 +71,10 @@ class Fabits:
         self.rt.after(0,self.show,self.ls,'>>>','purple')
     def admnu(self):
         self.funknd={
-        '文件(F)':{'新建':self.opnf,'打开':lambda: self.opnf(1),'保存':lambda: self.savf(rse=0),
-            '另存为':lambda: self.savf(1,rse=0),'导入':lambda: self.opnf(nda=1),
-            '导出':lambda: self.savf(nda=1,rse=0),'查找与替换':self.schgd,'撤销':self.undo,
-            '重做':self.redo,'关闭':self.clsf,'退出':self.qutmn},
+        '文件(F)':{'新建':self.opnf,'打开':lambda: self.opnf(1),'保存':self.savf,
+            '另存为':lambda: self.savf(1),'导入':lambda: self.opnf(nda=1),
+            '导出':lambda: self.savf(nda=1),'查找与替换':self.schgd,'撤销':self.undo,
+            '重做':self.redo,'关闭':self.clsf,'退出':self.savcfg},
         '算法(A)':{'同分异构体数量':self.iso,'链表冒泡排序':self.lnksrt,
             '最大环长度':self.ring,'求解罗马数字':self.rome},
         '批处理(B)':{'缺失后缀修复':lambda: self.thr(self.adlsnd),
@@ -82,10 +82,11 @@ class Fabits:
             '图片加解密':lambda: self.thr(self.picpt)},
         '网络(I)':{'官网':lambda: self.web('ofwb'),'项目仓库':lambda: self.web('hub'),
             '检查更新':lambda: self.thr(self.upd)},
-        '工具(T)':{'科学计算器':self.calc,'代码混合':self.cdobf,'编译链接库':self.cmpil,
-            '抽卡模拟器':self.conpuw,'圣遗物强化':self.itsth,'迷宫可视化':self.mazepl,
-            '抽卡概率计算':self.pulprogd,'批量重命名':self.renmgd,'文本处理':self.txmng},
-        '设置(S)':{'清屏':lambda: self.ls.delete(*self.ls.get_children()),'帮助':self.hlp,
+        '工具(T)':{'科学计算器':self.calc,'代码混合':self.cdobf,'命令管理器':self.cmdmng,
+            '编译链接库':self.cmpil,'抽卡模拟器':self.conpuw,'圣遗物强化':self.itsth,
+            '迷宫可视化':self.mazepl,'抽卡概率计算':self.pulprogd,'批量重命名':self.renmgd,
+            '文本处理':self.txmng},
+        '设置(S)':{'清屏':lambda: self.clear(self.ls),'帮助':self.hlp,
             '图标':lambda: self.ics1(1),'选项':self.prefr}}
         mnu=tkinter.Menu(self.rt); self.rt.config(menu=mnu)
         for i in self.funknd: self.adfun(i,self.funknd[i],mnu)
@@ -151,8 +152,9 @@ class Fabits:
         if top!=0: raise SyntaxError
         return self.calsyn(stk[top][1][:stk[top][2]])
     def calset(self):
-        try: self.acc=int(self.inp(f'保留小数位数(当前为{self.acc}位)'))
-        except: return
+        acc=self.inp(f'保留小数位数(当前为{self.acc}位)',int)
+        if acc is None: return
+        self.acc=acc
         if self.acc<0: self.acc=0
         if self.acc>15: self.acc=15
     def calsyn(self,expsyn):
@@ -262,15 +264,20 @@ class Fabits:
         if self.bgidx==2: lctme=time.localtime(); self.bgidx=0 if 6<=lctme.tm_hour<18 else 1
         self.bg=self.data['bg'][self.bgidx]; self.txchrc=self.data['chr'][self.bgidx]
         self.bgin=self.data['bgin'][self.bgidx]
+    def cin(self,i):
+        txs=['打开','打开','保存']; pth=self.dlg(i,txs[i],('All image files','*.*'))
+        if pth: self.var.set(pth)
     def clrplc(self):
         self.show(self.ls,'(1/4)打开','cyan')
         try: pnm=self.dlg(1,'打开',('All image files','*.*')); 
         except: return
         fm=lambda cl: (int(cl[:2],16),int(cl[2:4],16),int(cl[4:],16))
-        try:
-            nclr=list(map(fm,self.inp('输入被替换颜色(16进制表示)').split('/')))
-            clr=fm(self.inp('输入替换颜色(16进制表示)'))
-        except: return
+        snclr=self.inp('输入被替换颜色(16进制表示)')
+        if snclr is None: return
+        sclr=self.inp('输入替换颜色(16进制表示)')
+        if sclr is None: return
+        try: nclr=list(map(fm,snclr.split('/'))); clr=fm(sclr)
+        except: self.mb('w','o','提示','请检查输入的内容'); return
         self.thr(lambda: self.clrpld(pnm,nclr,clr))
     def clrpld(self,pnm,nclr,clr):
         self.rt.after(0,self.show,self.ls,'(2/4)转换','cyan'); pic=Image.open(pnm)
@@ -282,18 +289,126 @@ class Fabits:
         if not new.endswith('.png'): new+='.png'
         pic.save(new); self.rt.after(0,self.show,self.ls,'进程已结束','red')
         self.rt.after(0,self.show,self.ls,'>>>','purple')
-    def clsf(self,rse=0):
+    def clsf(self):
         if not self.ofl: return
         if self.chg:
             svst=self.mb('q','ync','关闭文件时保存','未保存的内容将会丢失,是否保存?')
             if svst=='yes':
-                if rse: self.savf()
-                else:
-                    try: self.savf()
-                    except: return
+                try: self.savf()
+                except: return
             elif svst=='cancel': return
         self.tetr.delete('1.0','end'); self.chg=0
         self.memp2.pack_forget(); self.ofl=0; self.rt.title(self.data['til'])
+    def cmdad(self):
+        nm=self.inp('新名称'); rplc=False
+        if nm is None: return
+        if nm in self.cmds:
+            if self.mb('q','yn','命令重复','是否替换')=='no': return
+            cmd=self.inp('输入命令,占位参数用{变量名}表示')
+            if cmd is None: return
+            for i in self.cmdtr.get_children():
+                print(self.cmdtr.item(i,'values'))
+                if self.cmdtr.item(i,'values')[0]==nm:
+                    self.cmdtr.set(i,column='cmd',value=cmd)
+                    self.cmdtr.see(i); break
+        else:
+            cmd=self.inp('输入命令,占位参数用{变量名}表示')
+            if cmd is None: return
+            self.cmdtr.insert('','end',values=(nm,cmd),tags=('green',))
+        self.cmds[nm]=cmd
+    def cmdel(self):
+        scl=self.cmdtr.selection()
+        if not scl: return
+        if self.mb('q','yn','','确认删除?')=='yes':
+            lnm,lcmd=self.cmdtr.item(scl,'values'); self.cmdtr.delete(scl); self.cmds.pop(lnm)
+    def cmdinp(self,st):
+        cin=self.crttpl('命令参数',18,6,'cmdinp',0)
+        cinemp=[ttk.Frame(cin) for i in range(4)]
+        cinbtx=['文件夹打开','文件打开','文件保存','跳过','确认','取消']
+        cinlb=ttk.Label(cinemp[0],text=st); self.var=tkinter.StringVar()
+        cintr=ttk.Entry(cinemp[1],width=40,textvariable=self.var)
+        erqut=lambda: (self.winqut(cin,'cmdinp'),self.inperr())
+        cincmd=[lambda: self.cin(0),lambda: self.cin(1),lambda: self.cin(2),
+                lambda: self.inperr(cin,'cmdinp',''),lambda: self.getvar(cin,'cmdinp',str),
+                lambda: self.inperr(cin,'cmdinp')]
+        for i in range(6):
+            btn=ttk.Button(cinemp[2+i//3],text=cinbtx[i],command=cincmd[i]); self.pck(btn)
+        cinlb.pack(expand=True); cintr.pack(expand=True); self.empck(cinemp)
+        cin.protocol('WM_DELETE_WINDOW',lambda: self.inperr(cin,'cmdinp'))
+        cin.wait_window(); return self.reval
+    def cmdmd(self):
+        scl=self.cmdtr.selection()
+        if not scl: return
+        lnm,lcmd=self.cmdtr.item(scl,'values')
+        nm=self.inp('新名称',show=lnm)
+        if nm is None: return
+        cmd=self.inp('输入命令,占位参数用{变量名}表示',show=lcmd)
+        if cmd is None: return
+        self.cmdtr.set(scl,column='nm',value=nm); self.cmdtr.set(scl,column='cmd',value=cmd)
+        self.cmds.pop(lnm); self.cmds[nm]=cmd
+    def cmdmng(self):
+        cmd=self.crttpl('命令管理器',32,24,'cmdmng',1)
+        cmdemp=[ttk.Frame(cmd) for i in range(3)]
+        cmdbtx=['添加','修改','删除','预览','运行','退出']
+        cmds=[self.cmdad,self.cmdmd,self.cmdel,lambda: self.cmdrn(pre=True),
+              self.cmdrn,lambda: self.cmdsvg(cmd)]
+        self.cmdtr=ttk.Treeview(cmdemp[0],columns=('nm','cmd'),show='headings')
+        self.cmdtr.heading('nm',text='名称'); self.cmdtr.heading('cmd',text='命令')
+        self.cmdtr.column('nm',width=3*self.scr,anchor='w')
+        self.cmdtr.column('cmd',width=15*self.scr,anchor='w')
+        cmdslb=tkinter.Scrollbar(cmdemp[0]); self.cmdtr.config(yscrollcommand=cmdslb.set)
+        cmdslb.config(command=self.cmdtr.yview)
+        cmdslb.pack(side='right',fill='y'); self.cmdtr.pack(fill='both',expand=True)
+        for i in range(6):
+            cmdbtn=ttk.Button(cmdemp[1],text=cmdbtx[i],command=cmds[i]); self.pck(cmdbtn)
+        self.cmdres=ttk.Treeview(cmdemp[2],columns=('opt',),show='tree')
+        self.cmdres.column('#0',width=0,stretch=False); cmdsr=tkinter.Scrollbar(cmdemp[2])
+        self.cmdres.column('opt',width=15*self.scr,anchor='w')
+        self.cmdres.config(yscrollcommand=cmdsr.set); cmdsr.config(command=self.cmdres.yview)
+        for i in self.data['clr']:
+            self.cmdtr.tag_configure(i,foreground=i,background=self.bg)
+            self.cmdres.tag_configure(i,foreground=i,background=self.bg)
+        cmdsr.pack(side='right',fill='y'); self.cmdres.pack(fill='both',expand=True)
+        self.clear(self.cmdres); cmd.protocol('WM_DELETE_WINDOW',lambda: self.cmdsvg(cmd))
+        self.empck(cmdemp)
+        try: fl=open('Commands.json','r',encoding='utf-8'); self.cmds=json.load(fl); fl.close()
+        except FileNotFoundError:
+            tkinter.messagebox.showerror('错误','找不到Commands.json')
+            if tkinter.messagebox.askyesno('','是否继续运行?'): self.cmds={}
+            else: return
+        except:
+            tkinter.messagebox.showerror('错误','非法的Commands.json\n请检查是否存在语法错误'); fl.close()
+            if tkinter.messagebox.askyesno('','是否继续运行?(会覆盖原有文件)'): self.cmds={}
+        for i in self.cmds: self.cmupd(self.cmdtr,i,self.cmds[i],'green')
+    def cmdp(self,cmd,tag):
+        pcs=subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        for i in iter(pcs.stdout.readline,''): self.rt.after(0,self.cmprt,i,tag,'purple')
+        out,err=pcs.communicate()
+        if out: self.rt.after(0,self.cmprt,out,tag,'yellow')
+        if err: self.rt.after(0,self.cmprt,err,tag,'red')
+        self.rt.after(0,self.show,tag,'>>>','purple')
+    def cmdrn(self,pre=False):
+        scl=self.cmdtr.selection()
+        if not scl: return
+        nm,cmd=self.cmdtr.item(scl,'values'); exc,arg,args,flg='','',[],False
+        for i in cmd:
+            if flg:
+                if i=='}': flg=False; exc+=i; args+=[arg]; arg=''
+                else: arg+=i
+            else:
+                exc+=i
+                if i=='{': flg=True
+        for i in range(len(args)):
+            args[i]=self.cmdinp(f'参数{args[i]}的值')
+            if args[i] is None: return
+        res=exc.format(*args)
+        self.clear(self.cmdres); self.cmprt(res,self.cmdres,'green')
+        if pre and self.mb('q','yn','预览','是否运行?')=='no': return
+        self.thr(lambda: self.cmdp(res,self.cmdres))
+    def cmdsvg(self,cmd):
+        fl=open('Commands.json','w',encoding='utf-8')
+        json.dump(self.cmds,fl,ensure_ascii=False,indent=4); fl.close()
+        self.winqut(cmd,'cmdmng')
     def cmp(self,pre=False):
         pth=self.cmpvar[0].get()
         if not pth: self.mb('w','o','提示','请检查输入的内容'); return
@@ -305,17 +420,12 @@ class Fabits:
         except: return
         data=fl.read(); fl.close(); enc=chardet.detect(data)['encoding']
         encs=f'-finput-charset={enc} -fexec-charset={enc}'
-        if self.cmpknd.get(): cmd=f'{cler} {encs} -o {fln}.exe {pth} {oth}'
-        else: cmd=f'{cler} {encs} -shared -o {fln}.dll {pth} {oth}'
-        upd=lambda tag: (tag.delete(*tag.get_children()),self.cmprt('>>>'+cmd,'purple'))
-        self.rt.after(0,upd,self.cmptr)
+        if self.cmpknd.get(): cmd=f'{cler} {encs} -o \"{fln}.exe\" \"{pth}\" {oth}'
+        else: cmd=f'{cler} {encs} -shared -o \"{fln}.dll\" \"{pth}\" {oth}'
+        self.rt.after(0,self.clear,self.cmptr)
+        self.rt.after(0,self.cmprt,cmd,self.cmptr,'green')
         if pre: return
-        pcs=subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
-        for i in iter(pcs.stdout.readline,''): self.rt.after(0,self.cmprt,i,'red')
-        out,err=pcs.communicate()
-        if out: self.rt.after(0,self.cmprt,out,'red')
-        if err: self.rt.after(0,self.cmprt,err,'red')
-        self.rt.after(0,self.show,self.cmptr,'>>>','purple')
+        self.cmdp(cmd,self.cmptr)
     def cmpad(self):
         getpth=self.dlg(1,'打开',('C/C++ source files','*.c *.cpp'))
         if not getpth: return
@@ -342,10 +452,10 @@ class Fabits:
         for i in self.data['clr']: self.cmptr.tag_configure(i,foreground=i,background=self.bg)
         for i in range(2):
             cmpbtn=ttk.Button(cemp[4],text=cmpbtx[i+2],command=cmpcmd[i+2]); self.pck(cmpbtn)
-        self.empck(cemp)
-    def cmprt(self,st,cl):
+        self.show(self.cmptr,'>>>','purple'); self.empck(cemp)
+    def cmprt(self,st,tag,cl):
         i=0; k=st[i:i+45]
-        while k: self.show(self.cmptr,k,cl); i+=45; k=st[i:i+45]
+        while k: self.show(tag,k,cl); i+=45; k=st[i:i+45]
     def conpuw(self):
         puw=self.crttpl('抽卡模拟器',16,14,'conpuw',1); pum=tkinter.Menu(puw)
         puw.config(menu=pum); uptx=['五星UP','四星UP1','四星UP2','四星UP3']
@@ -375,7 +485,8 @@ class Fabits:
         self.et.pack(fill='both',expand=True); self.empck(pu)
     def crttpl(self,tle,w,h,wid,re):
         tpl=tkinter.Toplevel(self.rt); tpl.geometry(self.calsz(w,h,wid))
-        tpl.resizable(re,re); tpl.transient(self.rt); tpl.title(tle); return tpl
+        tpl.resizable(re,re); tpl.transient(self.rt); tpl.title(tle)
+        tpl.protocol('WM_DELETE_WINDOW',lambda: self.winqut(tpl,wid)); return tpl
     @staticmethod
     def dlg(n,tle,flt):
         if n==0: dl=filedialog.askdirectory(title=tle)
@@ -444,11 +555,13 @@ class Fabits:
             if si not in self.sis and self.data['name'][si]!=self.mn:
                 self.lvl[self.sisl]=self.data['siup'][si]*random.choice(self.data['siupro'])
                 self.sis[self.sisl]=si; self.sisl+=1
-        self.itbtn[1].config(state='normal'); self.et.delete(*self.et.get_children()); self.prit()
-    def getvar(self,tag,win):
-        get=tag.get()
-        if get: self.var=get; self.winqut(win,'inp')
-        else: self.mb('w','o','提示','请检查输入的内容'); return
+        self.itbtn[1].config(state='normal'); self.clear(self.et); self.prit()
+    def getvar(self,tag,arg,knd):
+        res=self.var.get()
+        try:
+            if not res: self.mb('w','o','提示','请检查输入的内容'); return
+            self.reval=knd(res); self.winqut(tag,arg)
+        except: self.mb('w','o','提示','请检查输入的内容')
     def hlp(self):
         hlp=self.crttpl('帮助',36,36,'hlp',1)
         hlpmnu=tkinter.Menu(hlp); hlp.config(menu=hlpmnu)
@@ -469,7 +582,7 @@ class Fabits:
         hlpslb.pack(side='right',fill='y'); self.hlptrv.pack(fill='both',expand=True)
         self.hlpshw('F')
     def hlpshw(self,k):
-        self.hlptrv.delete(*self.hlptrv.get_children())
+        self.clear(self.hlptrv)
         mds={'D':'README.md','N':'NEW.md'}
         if k in mds:
             try: fl=open(mds[k],'r',encoding='utf-8')
@@ -556,21 +669,22 @@ class Fabits:
         for i in lnr: os.rename(self.pnm(names[i]),self.pnm(f'pic{i:04d}.png'))
         self.rt.after(0,self.show,self.ls,'进程已结束','red')
         self.rt.after(0,self.show,self.ls,'>>>','purple')
-    def inp(self,st):
+    def inp(self,st,knd=str,show=''):
         tmp=self.crttpl('',18,5,'inp',0); inbtx=['全选','确认','取消']
-        inemp=[ttk.Frame(tmp) for i in range(3)]; self.var=None
-        inlb=ttk.Label(inemp[0],text=st); etr=ttk.Entry(inemp[1],width=40)
-        inbcmd=[lambda: self.scl(etr),lambda: self.getvar(etr,tmp),
-                lambda: self.winqut(tmp,'inp')]
+        inemp=[ttk.Frame(tmp) for i in range(3)]
+        inlb=ttk.Label(inemp[0],text=st); self.var=tkinter.StringVar(value=show)
+        etr=ttk.Entry(inemp[1],width=40,textvariable=self.var)
+        inbcmd=[lambda: self.scl(etr),lambda: self.getvar(tmp,'inp',knd),
+                lambda: self.inperr(tmp,'inp')]
         for i in range(3):
-            btn=ttk.Button(inemp[2],text=inbtx[i],command=inbcmd[i])
-            btn.pack(side='left',expand=True)
-        inlb.pack(expand=True); etr.pack(expand=True)
-        for i in range(3): inemp[i].pack(fill='both',expand=True)
-        tmp.wait_window(); return self.var
+            btn=ttk.Button(inemp[2],text=inbtx[i],command=inbcmd[i]); self.pck(btn)
+        inlb.pack(expand=True); etr.pack(expand=True); self.empck(inemp)
+        tmp.protocol('WM_DELETE_WINDOW',lambda: self.inperr(tmp,'inp'))
+        tmp.wait_window(); return self.reval
+    def inperr(self,tag,arg,val=None): self.reval=val; self.winqut(tag,arg)
     def iso(self):
-        try: n=int(self.inp('基团-CnH2n+1,输入n值'))
-        except: return
+        n=self.inp('基团-CnH2n+1,输入n值',int)
+        if n is None: return
         self.thr(lambda: self.isocal(n))
     def isocal(self,n):
         hm,isol=numpy.zeros(n+1,dtype=int),1; hm[0]=1
@@ -599,6 +713,15 @@ class Fabits:
         self.itbtn[1].config(state='disabled'); slet.pack(side='right',fill='y')
         self.et.pack(fill='both',expand=True); self.empck(it)
     def lnkcal(self,arr,hd):
+        
+        
+        
+        
+        
+        
+        
+        
+        
         lnkl,cur=0,hd
         while cur!=-1: lnkl+=1; cur=arr[cur][1]
         for i in range(lnkl-1,-1,-1):
@@ -612,8 +735,10 @@ class Fabits:
         self.rt.after(0,self.show,self.ls,f'{arr},head={hd}','green')
         self.rt.after(0,self.show,self.ls,'>>>','purple')
     def lnksrt(self):
-        try: arr,hd=eval(self.inp('输入链表')),int(self.inp('输入头地址'))
-        except: return
+        hd=self.inp('输入头地址',int)
+        if hd is None: return
+        arr=self.inp('输入链表')
+        if arr is None: return
         self.thr(lambda: self.lnkcal(arr,hd))
     def mazepl(self):
         mz=self.crttpl('迷宫可视化',20,8,'mazepl',0)
@@ -716,6 +841,8 @@ class Fabits:
             res[i]=int(val)
         self.thr(lambda: self.pulpro(res))
     def prefn(self):
+        self.clear=lambda tag: (tag.delete(*tag.get_children()),self.show(tag,'>>>','purple'))
+        self.cmupd=lambda arg,nm,cmd,cl: arg.see(arg.insert('','end',values=(nm,cmd),tags=(cl,)))
         self.delmark=lambda tag: self.tetr.tag_remove('match',tag[0],tag[1]) if tag[0] else None
         self.empck=lambda tags: [i.pack(fill='both',expand=True) for i in tags]
         self.pck=lambda tag: tag.pack(side='left',expand=True)
@@ -774,6 +901,7 @@ class Fabits:
             tkinter.messagebox.showerror('错误','非法的Config.json\n请检查是否存在语法错误'); flc.close()
             if tkinter.messagebox.askyesno('','是否继续运行?(会覆盖原有文件)'): self.cfg={}
             else: sys.exit(0)
+        self.rt.protocol('WM_DELETE_WINDOW',self.savcfg)
     def prit(self,st=None):
         self.show(self.et,f"{self.data['knd'][self.kd]}(+{self.lvl[4]})",'cyan')
         self.show(self.et,self.mn,'blue')
@@ -854,10 +982,6 @@ class Fabits:
         self.proys=ttk.Button(prem[5],text='确认',command=self.prconf)
         prono=ttk.Button(prem[5],text='退出',command=lambda: self.winqut(progd,'pulprogd'))
         self.pck(self.proys); self.pck(prono); self.empck(prem)
-    def qutmn(self):
-        try: self.clsf(rse=1)
-        except: return
-        self.winqut(self.rt,'Fabits')
     def recmd(self,k):
         if k==0:
             exts=self.renvars[0].get().split('/')
@@ -943,8 +1067,8 @@ class Fabits:
             rebtn=ttk.Button(remp[3],text=rebtx[i],command=recmds[i]); self.pck(rebtn)
         self.empck(remp)
     def ring(self):
-        try: n=int(self.inp('输入n值(对)'))
-        except: return
+        n=self.inp('输入n值(对)',int)
+        if n is None: return
         self.thr(lambda: self.ringcal(n))
     def ringcal(self,n):
         m,flg=0,[1]*(2*n)
@@ -961,15 +1085,15 @@ class Fabits:
             for j in chs: otx[io]=j; io+=1
         return ''.join(otx)
     def rome(self):
-        try: ch=self.inp('输入罗马数字')
-        except: return
+        ch=self.inp('输入罗马数字')
+        if ch is None: return
         self.thr(lambda: self.romecal(ch))
     def romecal(self,ch):
         num,stk,top=0,[0]*len(ch),0
         dicr={'I':1,'V':5,'X':10,'L':50,'C':100,'D':500,'M':1000,
              'i':1,'v':5,'x':10,'l':50,'c':100,'d':500,'m':1000}
         for i in ch:
-            if i not in dicr: self.mb('w','o','提示','输入不合法'); return
+            if i not in dicr: self.mb('w','o','提示','请检查输入的内容'); return
             while top>0 and dicr[i]>stk[top-1]: top-=1; num-=stk[top]
             stk[top]=dicr[i]; top+=1
         while top>0: top-=1; num+=stk[top]
@@ -1000,6 +1124,16 @@ class Fabits:
         if cnt: self.cchg(); self.mb('i','o','替换',f'已成功替换{cnt}处文本')
         else: self.mb('i','o','提示','找不到相应的文本')
     def savcfg(self):
+        if self.ofl and self.chg:
+            svst=self.mb('q','ync','关闭文件时保存','未保存的内容将会丢失,是否保存?')
+            if svst=='yes':
+                rsflnm=self.dlg(2,'保存',('All text files','*.*'))
+                if not rsflnm: return
+                if not self.tp.splitext(rsflnm)[1]: rsflnm+='.txt'
+                fl=open(self.txflnm,'w',encoding='utf-8',newline='\n')
+                txres=self.tetr.get('1.0','end'); fl.write(txres); fl.close()
+            elif svst=='cancel': return
+        self.winqut(self.rt,'Fabits')
         fl=open('Config.json','w',encoding='utf-8')
         json.dump(self.cfg,fl,ensure_ascii=False,indent=4); fl.close()
         if self.reboot:
@@ -1008,15 +1142,14 @@ class Fabits:
             if self.rbtarg: subprocess.Popen(sarg+[self.rbtarg])
             else: subprocess.Popen(sarg,start_new_session=True)
             sys.exit(0)
-    def savf(self,at=0,nda=0,rse=1):
+    def savf(self,at=0,nda=0):
         if not self.ofl: return
         if nda:
             try: self.txcbtb(self.tetr.get('1.0','end'),clos=1); return
             except: return
         if self.nfl or at:
             rsflnm=self.dlg(2,'保存',('All text files','*.*'))
-            if rse and not rsflnm: raise Exception
-            elif not rsflnm: return
+            if not rsflnm: return
             if not self.tp.splitext(rsflnm)[1]: rsflnm+='.txt'
             self.txflnm=rsflnm; self.rt.title(f"{self.data['til']} - {self.txflnm}")
         fl=open(self.txflnm,'w',encoding='utf-8',newline='\n'); self.nfl=self.chg=0
@@ -1083,9 +1216,9 @@ class Fabits:
             if self.ofl:
                 if self.txflnm=='未命名文件': self.txflnm+='.txt'
                 fl=open(self.txflnm,'w',encoding='utf-8')
-                fl.write(self.tetr.get('1.0','end'))
-                fl.close(); self.rbtarg=self.txflnm
-            self.reboot=1; self.winqut(self.rt,'Fabits')
+                fl.write(self.tetr.get('1.0','end')); fl.close()
+                self.nfl,self.chg,self.rbtarg=0,0,self.txflnm
+            self.reboot=1; self.savcfg()
     def syn(self,k):
         if k=='M': self.m=self.res; return
         elif k=='=':
@@ -1184,8 +1317,8 @@ class Fabits:
             if not new: return
         funnum=int(self.funvar.get()[0])-1
         if funnum==1:
-            try: n=int(self.inp('输入字符密度'))
-            except: return
+            n=self.inp('输入字符密度',int)
+            if n is None: return
         self.thr(lambda: self.txdel(itx,new,n,funnum))
     @staticmethod
     def ucd(itx):
@@ -1228,4 +1361,4 @@ class Fabits:
     def winqut(self,arg,ky):
         a,b,c,d=arg.winfo_width(),arg.winfo_height(),arg.winfo_x(),arg.winfo_y()
         self.cfg[ky]=f'{a}x{b}+{c}+{d}'; arg.destroy()
-if __name__=='__main__': fabits=Fabits()
+if __name__=='__main__': Fabits()
