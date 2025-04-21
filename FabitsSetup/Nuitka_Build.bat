@@ -1,0 +1,1 @@
+nuitka --windows-console-mode=disable --standalone --show-progress --enable-plugin=tk-inter --include-package=PIL --include-package=numpy --include-package=chardet --include-package=requests --main=..\Fabits.py --windows-icon-from-ico=Na.ico
