@@ -41,13 +41,13 @@ class Fabits:
         sty.configure('Treeview',font=fnt,rowheight=self.scfac)
     def adend(self)->None:
         '''add end to file without end'''
-        self.wm.after(0,self.show,self.csl,'(1/2)打开','cyan')
+        self.wm.after(0,self.show,self.csl,'cyan','(1/2)打开')
         try:
             pth=self.dlg(0,'打开',('Text files','*.txt'))
             flnms=[i for i in os.listdir(pth) if os.path.isfile(self.fulnm(pth,i))]
         except: return
         names=[i for i in flnms if not os.path.splitext(i)[1]]; hdnms=self.data['hdnms']
-        self.wm.after(0,self.show,self.csl,'(2/2)转换','cyan'); lnm=len(names)
+        self.wm.after(0,self.show,self.csl,'cyan','(2/2)转换'); lnm=len(names)
         if lnm:
             self.wm.after(0,self.pgini,'查找添加缺失后缀',lnm)
             for i in range(lnm):
@@ -57,12 +57,10 @@ class Fabits:
                     tol+=1
                     if k<32 and k not in chs: cnt+=1
                 if tol==0:
-                    self.wm.after(0,self.pgupd,i+1,f'{names[i]}为空文件','cyan')
-                    self.wm.after(0,self.pgupd,i+1,f'{names[i]} -> {names[i]}.txt','cyan')
+                    self.wm.after(0,self.pgupd,i+1,f'{names[i]}为空文件 -> {names[i]}.txt','cyan')
                     fl.close(); os.rename(nm,nm+'.txt'); continue
                 elif cnt/tol<0.001:
-                    self.wm.after(0,self.pgupd,i+1,f'{names[i]}可能为文本文件','cyan')
-                    self.wm.after(0,self.pgupd,i+1,f'{names[i]} -> {names[i]}.txt','cyan')
+                    self.wm.after(0,self.pgupd,i+1,f'{names[i]}可能为文本文件 -> {names[i]}.txt','cyan')
                     fl.close(); os.rename(nm,nm+'.txt'); continue
                 fl.seek(0); head=fl.read(32)
                 for j in hdnms:
@@ -71,13 +69,8 @@ class Fabits:
                         fl.close(); os.rename(nm,nm+hdnms[j]); break
                 else: self.wm.after(0,self.pgupd,i+1,f'未知文件类型: {names[i]}','red')
             self.wm.after(1000,self.wmqut,self.pg,'pgini')
-        self.wm.after(0,self.show,self.csl,'进程已结束','red')
-        self.wm.after(0,self.show,self.csl,'>>>','purple')
-    def adfun(self,lbl:str,funs:dict[str:any])->None:
-        '''add submenu to main window menu'''
-        mnutmp=tkinter.Menu(self.mnu,tearoff=0,bg=self.bgin,fg=self.fg)
-        self.mnu.add_cascade(label=lbl,menu=mnutmp)
-        for i in funs: mnutmp.add_command(label=i,command=funs[i])
+        self.wm.after(0,self.show,self.csl,'red','进程已结束')
+        self.wm.after(0,self.show,self.csl,'purple','>>>')
     def admenu(self)->None:
         '''add menu to main window'''
         self.mnus={
@@ -87,22 +80,25 @@ class Fabits:
             '重做':self.redo,'关闭':self.fclose,'退出':self.savcfg},
         '算法(A)':{'同分异构体数量':self.iso,'链表冒泡排序':self.lnksrt,
             '最大环长度':self.ring,'求解罗马数字':self.rome},
-        '批处理(B)':{'缺失后缀修复':lambda: self.thr(self.adend),
-            '图片颜色替换':self.clrplc,'图片排序':lambda: self.thr(self.imgsrt),
-            '图片加解密':lambda: self.thr(self.picpt)},
+        '批处理(B)':{'缺失后缀修复':self.thr(self.adend),
+            '图片颜色替换':self.clrplc,'图片排序':self.thr(self.imgsrt),
+            '图片加解密':self.thr(self.picpt)},
         '网络(I)':{'项目仓库':lambda: self.web('proj'),'官网':lambda: self.web('web'),
-            '检查更新':lambda: self.thr(self.upd)},
+            '检查更新':self.thr(self.upd)},
         '工具(T)':{'科学计算器':self.calc,'代码混合':self.cdo,'命令管理器':self.cmdmng,
             '编译链接库':self.cmpil,'圣遗物强化':self.itmsth,'迷宫可视化':self.mzgd,
             '抽卡概率计算':self.progd,'抽卡模拟器':self.pulgd,'批量重命名':self.renmgd,
             '文本处理':self.txmng},
         '设置(S)':{'清屏':lambda: self.clear(self.csl),'帮助':self.hlp,
             '图标':lambda: self.icc(1),'选项':self.preset}}
-        for i in self.mnus: self.adfun(i,self.mnus[i])
+        for i in self.mnus:
+            mnutmp=tkinter.Menu(self.mnu,tearoff=0,bg=self.bgin,fg=self.fg)
+            self.mnu.add_cascade(label=i,menu=mnutmp)
+            for j in self.mnus[i]: mnutmp.add_command(label=j,command=self.mnus[i][j])
     def adups(self,up:str,idx:int)->None:
         '''add up pull for'''
         if up in self.ups: self.mb('w','o','选择角色重复','请重新选择')
-        else: self.ups[idx]=up; self.show(self.pultre,f'角色{up}添加成功!','red')
+        else: self.ups[idx]=up; self.show(self.pultre,'red',f'角色{up}添加成功!')
         for i in self.ups:
             if not i: return
         upstx=f'当前角色:{self.ups[0]},{self.ups[1]},{self.ups[2]},{self.ups[3]}'
@@ -148,7 +144,7 @@ class Fabits:
         '''input for scientific calculator'''
         if tx=='M': self.m=self.res; return
         elif tx=='=':
-            self.thr(self.cal(self.expsyn)); return
+            self.thr(self.cal,self.expsyn)(); return
         if tx=='AC': self.expidx,self.lexp=0,0
         elif tx=='←':
             if self.expidx!=0:
@@ -274,7 +270,7 @@ class Fabits:
             if fl: fls[i]=fl
             else: self.mb('w','o','提示','请检查输入的内容'); return
         if not os.path.splitext(fls[2])[1]: fls[2]+='.cpy'
-        self.thr(self.cdomix(fls))
+        self.thr(self.cdomix,fls)()
     def cdocmd(self,knd:int)->None:
         '''open or save path for code mix'''
         idx=1 if knd==2 else 0; tles=['打开','保存']
@@ -295,8 +291,8 @@ class Fabits:
         fcpy.write('\n\'\'\'\n#else\n')
         for i in cpp: fcpy.write(i+'\n')
         fcpy.write('\n#endif\n////\'\'\''); fcpy.close()
-        self.wm.after(0,self.show,self.csl,'进程已结束','red')
-        self.wm.after(0,self.show,self.csl,'>>>','purple')
+        self.wm.after(0,self.show,self.csl,'red','进程已结束')
+        self.wm.after(0,self.show,self.csl,'purple','>>>')
     def chgcfg(self)->None:
         '''listen change for text editor'''
         if not self.modify: self.modify=1; self.wm.title(f"{self.data['tle']} - {self.flnm}*")
@@ -319,30 +315,33 @@ class Fabits:
         '''open or save path for command manager'''
         tles=['打开','打开','保存']; pth=self.dlg(knd,tles[knd],('All image files','*.*'))
         if pth: self.cmdvar.set(f'\"{pth}\"')
+    def clear(self,tag:ttk.Treeview,sgn=1)->None:
+        tag.delete(*tag.get_children())
+        if sgn: self.show(tag,'purple','>>>')
     def clrplc(self)->None:
         '''color replace'''
-        self.show(self.csl,'(1/4)打开','cyan')
+        self.show(self.csl,'cyan','(1/4)打开')
         try: flnm=self.dlg(1,'打开',('All image files','*.*')); 
         except: return
-        convrt=lambda cl: (int(cl[:2],16),int(cl[2:4],16),int(cl[4:],16))
+        convrt=lambda cl: [int(cl[:2],16),int(cl[2:4],16),int(cl[4:],16)]
         sclrs=self.wminp('输入被替换颜色(16进制表示)')
         if sclrs is None: return
         sclr=self.wminp('输入替换颜色(16进制表示)')
         if sclr is None: return
         try: clrs=list(map(convrt,sclrs.split('/'))); clr=convrt(sclr)
         except: self.mb('w','o','提示','请检查输入的内容'); return
-        self.thr(lambda: self.clrpld(flnm,clrs,clr))
-    def clrpld(self,flnm:str,clrs:list[tuple[int,int,int]],clr:tuple[int,int,int])->None:
+        self.thr(self.clrpld,flnm,clrs,clr)()
+    def clrpld(self,flnm:str,clrs:list[list[int]],clr:list[int])->None:
         '''image replace color'''
-        self.wm.after(0,self.show,self.csl,'(2/4)转换','cyan'); pic=Image.open(flnm)
-        self.wm.after(0,self.show,self.csl,'(3/4)替换','cyan'); piarr=numpy.array(pic)
+        self.wm.after(0,self.show,self.csl,'cyan','(2/4)转换'); pic=Image.open(flnm)
+        self.wm.after(0,self.show,self.csl,'cyan','(3/4)替换'); piarr=numpy.array(pic)
         for i in clrs: alc=(piarr[:,:,:3]==i).all(axis=-1); piarr[alc,:3]=clr
-        self.wm.after(0,self.show,self.csl,'(4/4)保存','cyan'); pic=Image.fromarray(piarr)
+        self.wm.after(0,self.show,self.csl,'cyan','(4/4)保存'); pic=Image.fromarray(piarr)
         flnew=self.dlg(2,'保存',('Image files','*.png'))
         if not flnew: return
         if not flnew.endswith('.png'): flnew+='.png'
-        pic.save(flnew); self.wm.after(0,self.show,self.csl,'进程已结束','red')
-        self.wm.after(0,self.show,self.csl,'>>>','purple')
+        pic.save(flnew); self.wm.after(0,self.show,self.csl,'red','进程已结束')
+        self.wm.after(0,self.show,'purple',self.csl,'>>>')
     def cmdadd(self)->None:
         '''add new command for command manager'''
         nm=self.wminp('新名称')
@@ -359,7 +358,7 @@ class Fabits:
         else:
             cmd=self.wminp('输入命令,占位参数用{变量名}表示')
             if cmd is None: return
-            self.cmdshw(self.cmdtre,nm,cmd,'green')
+            self.show(self.cmdtre,'green',nm,cmd)
         self.cfg['commands'][nm]=cmd
     def cmddel(self)->None:
         '''delete command for command manager'''
@@ -391,12 +390,13 @@ class Fabits:
         self.cmdtre.column('cmd',width=15*self.scfac,anchor='w')
         cmdslb=tkinter.Scrollbar(cmdemp[0]); self.cmdtre.config(yscrollcommand=cmdslb.set)
         cmdslb.config(command=self.cmdtre.yview)
+        for i in self.data['clr']: self.cmdtre.tag_configure(i,foreground=i,background=self.bg)
         cmdslb.pack(side='right',fill='y'); self.cmdtre.pack(fill='both',expand=1)
         for i in range(6):
             cmdbtn=ttk.Button(cmdemp[1],text=cmdbtx[i],command=cmdcmd[i]); self.pck(cmdbtn)
         self.cmdres=self.cretre(cmdemp[2]); self.clear(self.cmdres)
         if 'commands' not in self.cfg: self.cfg['commands']={}
-        for i in self.cfg['commands']: self.cmdshw(self.cmdtre,i,self.cfg['commands'][i],'green')
+        for i in self.cfg['commands']: self.show(self.cmdtre,'green',i,self.cfg['commands'][i])
         self.empck(cmdemp)
     def cmdout(self,cmd:str,tag:ttk.Treeview)->None:
         '''print command line message'''
@@ -405,7 +405,7 @@ class Fabits:
         out,err=pipe.communicate()
         if out: self.wm.after(0,self.cmpout,out,tag,'yellow')
         if err: self.wm.after(0,self.cmpout,err,tag,'red')
-        self.wm.after(0,self.show,tag,'>>>','purple')
+        self.wm.after(0,self.show,tag,'purple','>>>')
     def cmdrun(self,pre=0)->None:
         '''fill argument and run command for command manager'''
         scl=self.cmdtre.selection()
@@ -424,7 +424,7 @@ class Fabits:
         exe=form.format(*args)
         self.clear(self.cmdres); self.cmpout(exe,self.cmdres,'green')
         if pre and self.mb('q','yn','预览','是否运行?')=='no': return
-        self.thr(lambda: self.cmdout(exe,self.cmdres))
+        self.thr(self.cmdout,exe,self.cmdres)()
     def cmpadd(self)->None:
         '''open or save path for command compile'''
         pth=self.dlg(1,'打开',('C/C++ source files','*.c *.cpp'))
@@ -454,7 +454,7 @@ class Fabits:
         cmptx,cmpbtx=['编译类型','选择文件','其它参数'],['浏览','预览','开始','退出']
         self.cmpknd=tkinter.IntVar(value=0); cmppre=lambda: self.cmpchk(pre=1)
         self.cmpvars=[tkinter.StringVar() for i in range(2)]; cmpknd=['.dll','.exe']
-        cmpcmd=[self.cmpadd,lambda: self.thr(cmppre),lambda: self.thr(self.cmpchk),
+        cmpcmd=[self.cmpadd,self.thr(cmppre),self.thr(self.cmpchk),
                 lambda: self.wmqut(cmp,'cmpil')]
         for i in range(3): cmplb=ttk.Label(cmpemp[i],text=cmptx[i]); self.pck(cmplb)
         for i in range(2):
@@ -464,11 +464,11 @@ class Fabits:
             cmpbtn=ttk.Button(cmpemp[i+1],text=cmpbtx[i],command=cmpcmd[i]); self.pck(cmpbtn)
             cmpbtn=ttk.Button(cmpemp[4],text=cmpbtx[i+2],command=cmpcmd[i+2]); self.pck(cmpbtn)
         self.cmptre=self.cretre(cmpemp[3])
-        self.show(self.cmptre,'>>>','purple'); self.empck(cmpemp)
+        self.show(self.cmptre,'purple','>>>'); self.empck(cmpemp)
     def cmpout(self,tx:str,tag:ttk.Treeview,cl:str)->None:
         '''multiline print'''
         idx=0; tmptx=tx[idx:idx+45]
-        while tmptx: self.show(tag,tmptx,cl); idx+=45; tmptx=tx[idx:idx+45]
+        while tmptx: self.show(tag,cl,tmptx); idx+=45; tmptx=tx[idx:idx+45]
     def cretpl(self,tle:str,w:int,h:int,wid:str,re:int,num:int)->tuple[tkinter.Toplevel,list[ttk.Frame]]:
         '''create toplevel and frame'''
         tpl=tkinter.Toplevel(self.wm); tpl.geometry(self.calsz(w,h,wid))
@@ -482,14 +482,22 @@ class Fabits:
         slb.config(command=tre.yview); tre.column('#0',width=0,stretch=0)
         tre.column('opt',width=30*self.scfac,anchor='w')
         for i in self.data['clr']: tre.tag_configure(i,foreground=i,background=self.bg)
+        tre.bind('<Control-c>',lambda *args: self.cpy(tre))
         slb.pack(side='right',fill='y'); tre.pack(fill='both',expand=1)
         return tre
+    def cpy(self,tag:ttk.Treeview)->str:
+        scl=tag.selection()
+        if scl:
+            val=tag.item(scl[0],'values')
+            self.wm.clipboard_clear()
+            self.wm.clipboard_append(val)
+        return 'break'
     @staticmethod
-    def dlg(knd:int,tl:str,fltype:tuple[str,str])->str:
+    def dlg(knd:int,tl:str,tp:tuple[str,str])->str:
         '''open and save file or directory path'''
         if knd==0: pth=filedialog.askdirectory(title=tl)
-        elif knd==1: pth=filedialog.askopenfilename(title=tl,filetypes=(fltype,))
-        else: pth=filedialog.asksaveasfilename(title=tl,filetypes=(fltype,))
+        elif knd==1: pth=filedialog.askopenfilename(title=tl,filetypes=(tp,))
+        else: pth=filedialog.asksaveasfilename(title=tl,filetypes=(tp,))
         return pth
     @staticmethod
     def encucd(tx:str)->str:
@@ -553,16 +561,14 @@ class Fabits:
         tx=self.edtr.get('1.0','end'); fl.write(tx); fl.close()
     def funset(self)->None:
         '''initialize useful function'''
-        self.clear=lambda tag: (tag.delete(*tag.get_children()),self.show(tag,'>>>','purple'))
         self.clrtul=lambda: (self.tul.reset(),self.tul.ht(),self.tul.speed(0),self.tul.penup())
-        self.cmdshw=lambda arg,nm,cmd,clr: arg.see(arg.insert('','end',values=(nm,cmd),tags=(clr,)))
         self.delmark=lambda tag: self.edtr.tag_remove('match',tag[0],tag[1]) if tag[0] else None
         self.empck=lambda tags: [i.pack(fill='both',expand=1) for i in tags]
         self.fulnm=lambda pth,flnm: os.path.join(pth,flnm)
         self.pck=lambda tag: tag.pack(side='left',expand=1)
         self.scl=lambda tag: (tag.focus_set(),tag.selection_range(0,'end'))
-        self.show=lambda arg,tx,clr: arg.see(arg.insert('','end',values=(tx,),tags=(clr,)))
-        self.thr=lambda fun: threading.Thread(target=fun).start()
+        self.show=lambda tag,clr,*args: tag.see(tag.insert('','end',values=args,tags=(clr,)))
+        self.thr=lambda fun,*args: lambda: threading.Thread(target=fun,args=args).start()
         self.web=lambda tag: webbrowser.open(self.data[tag])
     def getvar(self,var:tkinter.StringVar,tag:tkinter.Toplevel,arg:str,knd:type)->None:
         '''get value of entry string variable'''
@@ -579,12 +585,12 @@ class Fabits:
                  '选项':{'退出':lambda: self.wmqut(hlp,'hlp')}}
         for i in hlpmnus:
             mnutmp=tkinter.Menu(hlpmnu,tearoff=0,bg=self.bgin,fg=self.fg)
-            hlpmnu.add_cascade(label='选项',menu=mnutmp)
+            hlpmnu.add_cascade(label=i,menu=mnutmp)
             for j in hlpmnus[i]: mnutmp.add_command(label=j,command=hlpmnus[i][j])
         self.hlptre=self.cretre(hlpemp[0]); self.hlpshw('F'); self.empck(hlpemp)
     def hlpshw(self,knd:str)->None:
         '''print help message'''
-        self.clear(self.hlptre); mdfls={'D':'README.md','N':'NEW.md'}
+        self.clear(self.hlptre,sgn=0); mdfls={'D':'README.md','N':'NEW.md'}
         if knd in mdfls:
             try: fl=open(mdfls[knd],'r',encoding='utf-8')
             except: self.mb('e','o','错误',f'{mdfls[knd]}不存在'); return
@@ -592,18 +598,18 @@ class Fabits:
             while ln:
                 if ln=='\n' or ln.startswith('!'): ln=fl.readline(); continue 
                 elif ln.startswith('```'): flg=1-flg
-                elif flg: self.show(self.hlptre,ln,'green')
+                elif flg: self.show(self.hlptre,'green',ln)
                 else:
                     tx=''
                     for i in ln:
                         if i in '#*`- ': continue
                         tx+=i
-                    self.show(self.hlptre,tx,'green')
+                    self.show(self.hlptre,'green',tx)
                 ln=fl.readline()
             fl.close()
         else:
             self.hlptre.column('opt',anchor='c')
-            for i in self.data['hlps'][knd]: self.show(self.hlptre,i,'green')
+            for i in self.data['hlps'][knd]: self.show(self.hlptre,'green',i)
     def hshgen(self):
         '''generate crypted hash code'''
         licc,ltmp,lhdg,hsh=len(self.data['icc']),0,64,hashlib.sha256()
@@ -659,12 +665,12 @@ class Fabits:
         cmd(dig)
     def imgsrt(self)->None:
         '''image sort use multiprocessing library'''
-        self.wm.after(0,self.show,self.csl,'(1/3)打开','cyan')
+        self.wm.after(0,self.show,self.csl,'cyan','(1/3)打开')
         try:
             pth=self.dlg(0,'打开',('Text files','*.txt'))
             names=[i for i in os.listdir(pth) if i.lower().endswith('.png')]
         except: return
-        self.wm.after(0,self.show,self.csl,'(2/3)排序','cyan'); lnm=len(names)
+        self.wm.after(0,self.show,self.csl,'cyan','(2/3)排序'); lnm=len(names)
         lnmr,cnt=range(lnm),multiprocessing.cpu_count()
         res,pol=[[None,0,''] for i in lnmr],multiprocessing.Pool(processes=cnt)
         self.wm.after(0,self.pgini,'图片排序',lnm); self.cnt=0
@@ -676,29 +682,29 @@ class Fabits:
         pol.close(); pol.join(); self.wm.after(1000,self.wmqut,self.pg,'pgini')
         for i in lnmr: res[i][1]=res[i][0].get()
         res=sorted(res,key=lambda i:i[1])
-        self.wm.after(0,self.show,self.csl,'(3/3)整理','cyan')
+        self.wm.after(0,self.show,self.csl,'cyan','(3/3)整理')
         for i in lnmr: os.rename(self.fulnm(pth,res[i][2]),self.fulnm(pth,f'pix{i:04d}.png'))
         names=[i for i in os.listdir(pth) if i.lower().endswith('.png')]
         for i in lnmr: os.rename(self.fulnm(pth,names[i]),self.fulnm(pth,f'pic{i:04d}.png'))
-        self.wm.after(0,self.show,self.csl,'进程已结束','red')
-        self.wm.after(0,self.show,self.csl,'>>>','purple')
+        self.wm.after(0,self.show,self.csl,'red','进程已结束')
+        self.wm.after(0,self.show,self.csl,'purple','>>>')
     def iniset(self)->None:
         '''initialize program necessarity'''
         try:
             self.scfac=ctypes.windll.shcore.GetScaleFactorForDevice(0)//5
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
         except: self.scfac=20
+        self.wm=tkinter.Tk()
+        try: self.wm.iconphoto(1,tkinter.PhotoImage(file='Na.png')); self.wm.withdraw()
+        except:
+            self.wm.withdraw()
+            messagebox.showerror('错误','找不到Na.png'); exit(0)
         try: fld=open('Data.json','r',encoding='utf-8'); self.data=json.load(fld); fld.close()
         except FileNotFoundError:
             messagebox.showerror('错误','找不到Data.json'); exit(0)
         except:
             messagebox.showerror('错误','非法的Data.json\n请检查是否存在语法错误')
             fld.close(); exit(0)
-        self.wm=tkinter.Tk()
-        try: self.wm.iconphoto(1,tkinter.PhotoImage(file='Na.png')); self.wm.withdraw()
-        except:
-            self.wm.withdraw()
-            messagebox.showerror('错误','找不到Na.png'); exit(0)
         try: flc=open('Config.json','r',encoding='utf-8'); self.cfg=json.load(flc); flc.close()
         except FileNotFoundError:
             messagebox.showwarning('提示','找不到Config.json')
@@ -715,7 +721,7 @@ class Fabits:
         '''input for iso calculate'''
         num=self.wminp('基团-CnH2n+1,输入n值',int)
         if num is None: return
-        self.thr(lambda: self.isocal(num))
+        self.thr(self.isocal,num)()
     def isocal(self,num:int)->None:
         '''calculate iso'''
         isonum,liso=numpy.zeros(num+1,dtype=int),1; isonum[0]=1
@@ -725,8 +731,8 @@ class Fabits:
                 isotmp+=isonum[isoa]*isonum[isob]*isonum[isoc]; isoa,isob=isoa-1,isob+1
                 if isoa<isob: isoc+=1; isoa,isob=i-2*isoc,isoc
             isonum[liso],liso=isotmp,liso+1
-        self.wm.after(0,self.show,self.csl,f'{isonum[num]}','green')
-        self.wm.after(0,self.show,self.csl,'>>>','purple')
+        self.wm.after(0,self.show,self.csl,'green',f'{isonum[num]}')
+        self.wm.after(0,self.show,self.csl,'purple','>>>')
     def itmgen(self)->None:
         '''generate item for Genshin Impact'''
         self.ppts,self.pptlvls,self.itknd=[0]*4,[0]*5,random.randint(0,4)
@@ -744,19 +750,19 @@ class Fabits:
             if ppt not in self.ppts and self.data['name'][ppt]!=self.mn:
                 self.pptlvls[self.lppts]=self.data['pptmax'][ppt]*random.choice(self.data['pptupd'])
                 self.ppts[self.lppts]=ppt; self.lppts+=1
-        self.itmbtn[1].config(state='normal'); self.clear(self.itmtre); self.itmprt()
+        self.itmbtn[1].config(state='normal'); self.clear(self.itmtre,sgn=0); self.itmprt()
     def itmprt(self,pptidx=-1)->None:
         '''print item for item strength tool'''
-        self.show(self.itmtre,f"{self.data['itmknd'][self.itknd]}(+{self.pptlvls[4]})",'cyan')
-        self.show(self.itmtre,self.mn,'blue')
+        self.show(self.itmtre,'cyan',f"{self.data['itmknd'][self.itknd]}(+{self.pptlvls[4]})")
+        self.show(self.itmtre,'blue',self.mn)
         for i in range(self.lppts):
             ppt=self.data['name'][self.ppts[i]]
             if pptidx!=-1 and i==pptidx: clr='green'
             else: clr='red'
             if ppt[-1]==' ':
-                self.show(self.itmtre,f'{ppt[:-1]}+{round(self.pptlvls[i]+0.05,1)}',clr)
-            else: self.show(self.itmtre,f'{ppt}+{round(self.pptlvls[i]+0.05,1)}%',clr)
-        self.show(self.itmtre,'>>>','purple')
+                self.show(self.itmtre,clr,f'{ppt[:-1]}+{round(self.pptlvls[i]+0.05,1)}')
+            else: self.show(self.itmtre,clr,f'{ppt}+{round(self.pptlvls[i]+0.05,1)}%')
+        self.show(self.itmtre,'purple','>>>')
     def itmsth(self)->None:
         '''item strength tool for Genshin Impact'''
         itm,itmemp=self.cretpl('圣遗物强化',16,14,'itmsth',1,3)
@@ -796,15 +802,15 @@ class Fabits:
                     else: lnk[q][1]=r
                     lnk[p][1],lnk[r][1]=lnk[r][1],p; p,r=r,p
                 p,q,r=r,p,lnk[r][1]
-        self.wm.after(0,self.show,self.csl,f'{lnk},head={head}','green')
-        self.wm.after(0,self.show,self.csl,'>>>','purple')
+        self.wm.after(0,self.show,self.csl,'green',f'{lnk},head={head}')
+        self.wm.after(0,self.show,self.csl,'purple','>>>')
     def lnksrt(self)->None:
         '''input for link bubble sort'''
         lnks=self.wminp('输入链表')
         if lnks is None: return
         head=self.wminp('输入头地址',int)
         if head is None: return
-        self.thr(lambda: self.lnkcal(lnks,head))
+        self.thr(self.lnkcal,lnks,head)()
     def mb(self,icn:str,tp:str,tle:str,msg:str)->str:
         '''create message box'''
         mbdata=self.data['mb']
@@ -813,7 +819,8 @@ class Fabits:
     def mulpgu(self,cnt:int)->None:
         '''update progressbar for image sort multiprocessing callback'''
         self.cnt+=1
-        self.wm.after(0,self.pgupd,self.cnt,f'已完成({self.cnt}/{cnt})','cyan')
+        if not self.cnt%2:
+            self.wm.after(0,self.pgupd,self.cnt,f'已完成({self.cnt}/{cnt})','cyan')
     def mzchk(self)->None:
         '''check input for visual maze'''
         args=[0]*6
@@ -821,7 +828,7 @@ class Fabits:
             for i in range(6): args[i]=int(self.mzvars[i].get())
             self.wmemp[0].pack_forget(); self.cvs.pack(fill='both',expand=1)
             self.clrtul(); self.mzbtn[0].config(state='disabled')
-            self.thr(lambda: self.mzgen(args))
+            self.thr(self.mzgen,args)()
         except: self.mb('w','o','提示','请检查输入的内容'); return
     def mzclr(self,tag:tkinter.Toplevel)->None:
         '''clear and quit for visual maze'''
@@ -833,7 +840,7 @@ class Fabits:
         mzlb=ttk.Label(mzemp[0],text='迷宫设置'); mzlb.pack(expand=1)
         mztx,mzbtx=['迷宫长','迷宫宽','起点x','起点y','终点x','终点y'],['生成','解','退出']
         self.mzbtn=[ttk.Button]*3; self.mzvars=[tkinter.StringVar() for i in range(6)]
-        mzcmd=[self.mzchk,lambda: self.thr(self.mzslv),lambda: self.mzclr(mz)]
+        mzcmd=[self.mzchk,self.thr(self.mzslv),lambda: self.mzclr(mz)]
         for i in range(6):
             mzlb=ttk.Label(mzemp[i//2+1],text=mztx[i],width=8); self.pck(mzlb)
             mzet=ttk.Entry(mzemp[i//2+1],width=12,textvariable=self.mzvars[i]); self.pck(mzet)
@@ -919,29 +926,29 @@ class Fabits:
     def pgupd(self,num:int,tx:str,clr:str)->None:
         '''update progress bar'''
         self.pglb.config(text=f'{num/self.tol:.2f}%')
-        self.show(self.pgtre,tx,clr); self.pgpgb['value']=num
+        self.show(self.pgtre,clr,tx); self.pgpgb['value']=num
     def picpt(self)->None:
         '''picture encrypt'''
-        self.wm.after(0,self.show,self.csl,'(1/3)打开','cyan')
+        self.wm.after(0,self.show,self.csl,'cyan','(1/3)打开')
         try: flnm=self.dlg(1,'打开',('All image files','*.*')); pic=Image.open(flnm)
         except: return
         piarr,hgt,wth=numpy.array(pic),pic.height,pic.width
-        self.wm.after(0,self.show,self.csl,'(2/3)加密','cyan')
+        self.wm.after(0,self.show,self.csl,'cyan','(2/3)加密')
         lclr=len(piarr[0,0]); hsh=self.hshgen()
         imgmsk=numpy.zeros_like(piarr); self.wm.after(0,self.pgini,'图片加密',hgt)
         for i in range(hgt):
             for j in range(wth):
                 for k in range(lclr): imgmsk[i,j,k]=next(hsh)
-            self.wm.after(0,self.pgupd,i+1,f'已加密{i+1}/{hgt}','cyan')
+            if i%2: self.wm.after(0,self.pgupd,i+1,f'已加密{i+1}/{hgt}','cyan')
         pic=Image.fromarray(numpy.bitwise_xor(piarr,imgmsk))
         self.wm.after(1000,self.wmqut,self.pg,'pgini')
-        self.wm.after(0,self.show,self.csl,'(3/3)保存','cyan')
+        self.wm.after(0,self.show,self.csl,'cyan','(3/3)保存')
         new=self.dlg(2,'保存',('Image files','*.png'))
         if not new: return
         if new.endswith('.png'): pic.save(new)
         else: pic.save(f'{new}.png')
-        self.wm.after(0,self.show,self.csl,'进程已结束','red')
-        self.wm.after(0,self.show,self.csl,'>>>','purple')
+        self.wm.after(0,self.show,self.csl,'red','进程已结束')
+        self.wm.after(0,self.show,self.csl,'purple','>>>')
     def precfg(self)->None:
         '''confirm and reboot for preference setting'''
         state={'白天模式':0,'夜间模式':1,'流转模式':2}
@@ -1006,7 +1013,7 @@ class Fabits:
                             if protmp[j,t,p,k]!=0:
                                 pullst[lpro]=[j,t,p,k]; prolst[lpro]=protmp[j,t,p,k]
                                 lpro+=1; protmp[j,t,p,k]=0
-            self.wm.after(0,self.pgupd,i+1,f'已完成{i+1}抽','cyan')
+            if i%2: self.wm.after(0,self.pgupd,i+1,f'已完成{i+1}抽','cyan')
         for i in range(lpro): respro[pullst[i,0]]+= prolst[i] * 100
         for i in range(ed+1):
             if respro[i]>0.1: st=i; break
@@ -1014,10 +1021,10 @@ class Fabits:
             if respro[i]<0.1: respro[i-1]+=respro[i]
             else: ed=i; break
         self.wm.after(1000,self.wmqut,self.pg,'pgini')
-        self.wm.after(0,self.show,self.csl,'UP数 概率','purple')
+        self.wm.after(0,self.show,self.csl,'purple','UP数 概率')
         for i in range(st,ed+1):
-            self.wm.after(0,self.show,self.csl,f'{i:>2d}{respro[i]:7.2f}%','purple')
-        self.wm.after(0,self.show,self.csl,'>>>','purple')
+            self.wm.after(0,self.show,self.csl,'purple',f'{i:>2d}{respro[i]:7.2f}%')
+        self.wm.after(0,self.show,self.csl,'purple','>>>')
         self.procfm.config(state='normal')
     def prochk(self)->None:
         '''check input for pull for probility'''
@@ -1027,7 +1034,7 @@ class Fabits:
             if (not val.isdigit()) or int(val)<0: self.mb('w','o','提示','请检查输入的内容'); return
             if i>1 and int(val)>limit[i-2]: self.mb('w','o','提示','请检查输入的内容'); return
             args[i]=int(val)
-        self.thr(lambda: self.pro(args))
+        self.thr(self.pro,args)()
     def progd(self)->None:
         '''pull for probility tool for Genshin Impact'''
         pro,proemp=self.cretpl('抽卡概率计算',20,9,'progd',0,6)
@@ -1044,31 +1051,31 @@ class Fabits:
         for i in range(num):
             kndpro,trupro=random.random(),random.random()
             if kndpro<=self.data['pro_lst5'][self.put5]:
-                if self.true_up5: self.show(self.pultre,self.ups[0],'yellow'); self.true_up5=0
+                if self.true_up5: self.show(self.pultre,'yellow',self.ups[0]); self.true_up5=0
                 elif trupro<=self.data['tu_lst'][self.fu]:
-                    self.show(self.pultre,self.ups[0],'yellow'); self.true_up5,self.fu=0,0
+                    self.show(self.pultre,'yellow',self.ups[0]); self.true_up5=self.fu=0
                 else:
                     fal_up=random.choice(self.data['fups5']+self.data['wpns5'])
-                    self.show(self.pultre,fal_up,'yellow'); self.show(self.pultre,'歪','red')
+                    self.show(self.pultre,'yellow',fal_up); self.show(self.pultre,'red','歪')
                     self.true_up5,self.fu=1,self.fu+1
                 self.put5,self.put4=0,self.put4+1
             elif kndpro<=self.data['pro_lst5'][self.put5]+self.data['pro_lst4'][self.put4]:
                 if trupro<=0.5 or self.true_up4:
-                    self.show(self.pultre,random.choice(self.ups[1:]),'purple'); self.true_up4=0
+                    self.show(self.pultre,'purple',random.choice(self.ups[1:])); self.true_up4=0
                 else:
                     fal_up=random.choice(self.data['ups4']+self.data['wpns4'])
-                    self.show(self.pultre,fal_up,'purple'); self.true_up4=1
+                    self.show(self.pultre,'purple',fal_up); self.true_up4=1
                 self.put5,self.put4=self.put5+1,0
             else:
-                self.show(self.pultre,random.choice(self.data['wpns3']),'blue')
+                self.show(self.pultre,'blue',random.choice(self.data['wpns3']))
                 self.put5,self.put4=self.put5+1,self.put4+1
-        self.show(self.pultre,f'垫{self.put5}发','cyan'); self.show(self.pultre,'>>>','purple')
+        self.show(self.pultre,'cyan',f'垫{self.put5}发'); self.show(self.pultre,'purple','>>>')
     def pulgd(self)->None:
         '''pull for tools for Genshin Impact'''
         pul,pulemp=self.cretpl('抽卡模拟器',16,14,'pulgd',1,3)
         pultx,pulbtx=['五星UP','四星UP1','四星UP2','四星UP3'],['祈愿一次','祈愿十次','退出']
         puldtx=['ups5','ups4','fups5','wpns5','wpns4','wpns3']
-        self.ups,self.put5,self.put4,self.true_up4,self.true_up5,self.fu=['']*4,0,0,0,0,0
+        self.ups,self.put5,self.put4,self.true_up5,self.true_up4,self.fu=['']*4,0,0,0,0,0
         pulcmd=[lambda: self.pul(1),lambda: self.pul(10),lambda: self.wmqut(pul,'pulgd')]
         self.pulbtn=[ttk.Button]*3; pulmnu=tkinter.Menu(pul); pul.config(menu=pulmnu)
         pulmnus=[tkinter.Menu(pul,tearoff=0,bg=self.bgin,fg=self.fg) for i in range(4)]
@@ -1098,7 +1105,7 @@ class Fabits:
             pth=self.dlg(0,'打开',('Text files','*.txt'))
             if not pth: return
             self.revars[1].set(pth)
-        else: self.thr(lambda: self.renm(show=1))
+        else: self.thr(self.renm,1)()
     def redo(self)->None:
         '''redo operation for text editor'''
         if self.onfile:
@@ -1152,14 +1159,14 @@ class Fabits:
                 except: cnt+=1
             self.wm.after(1000,self.wmqut,self.pg,'pgini')
             if cnt: self.mb('w','o','重命名',self.data['failmsg'].format(lnms-cnt,cnt))
-        self.wm.after(0,self.show,self.csl,'进程已结束','red')
-        self.wm.after(0,self.show,self.csl,'>>>','purple')
+        self.wm.after(0,self.show,self.csl,'red','进程已结束')
+        self.wm.after(0,self.show,self.csl,'purple','>>>')
     def renmgd(self)->None:
         '''file rename tool'''
         re,reemp=self.cretpl('批量重命名',24,7,'renmgd',0,4)
         revar=tkinter.StringVar(); self.revars=[tkinter.StringVar() for i in range(3)]
         retx,rebtx=['文件后缀(用/分隔)','目录','命名模板'],['重命名','取消']
-        revarcmd=[lambda: self.thr(self.renm),lambda: self.wmqut(re,'renmgd')]
+        revarcmd=[self.thr(self.renm),lambda: self.wmqut(re,'renmgd')]
         refun=lambda *args: self.revars[2].set(self.data['tmplts'][int(revar.get()[0])-1])
         for i in range(3):
             recmd=lambda k=i: self.recmd(k); tx='浏览' if i-2 else '预览'
@@ -1176,7 +1183,7 @@ class Fabits:
         '''input for calculate ring number'''
         num=self.wminp('输入n值(对)',int)
         if num is None: return
-        self.thr(lambda: self.ringcal(num))
+        self.thr(self.ringcal,num)()
     def ringcal(self,num:int)->None:
         '''calculate ring number'''
         rmax,flg=0,[1]*(2*num)
@@ -1187,10 +1194,10 @@ class Fabits:
                 if tmp<num: tmp*=2
                 else: tmp=2*(tmp-num)+1
             rmax=max(rmax,lring)
-        self.wm.after(0,self.show,self.csl,f'{rmax}','green')
-        self.wm.after(0,self.show,self.csl,'>>>','purple')
-    
-    def rndchr(self,tx:str,num:int)->str:
+        self.wm.after(0,self.show,self.csl,'green',f'{rmax}')
+        self.wm.after(0,self.show,self.csl,'purple','>>>')
+    @staticmethod
+    def rndchr(tx:str,num:int)->str:
         '''generate random combinate character for text manager'''
         slst=list(range(768,880))+list(range(1155,1162))
         lres,res=0,['']*len(tx)*(num+1)
@@ -1202,7 +1209,7 @@ class Fabits:
         '''input for calculate rome number'''
         chs=self.wminp('输入罗马数字')
         if chs is None: return
-        self.thr(lambda: self.romecal(chs))
+        self.thr(self.romecal,chs)()
     def romecal(self,chs:str)->None:
         '''calculate rome number'''
         num,stk,top=0,[0]*len(chs),0
@@ -1213,8 +1220,8 @@ class Fabits:
             while top>0 and rdic[i]>stk[top-1]: top-=1; num-=stk[top]
             stk[top]=rdic[i]; top+=1
         while top>0: top-=1; num+=stk[top]
-        self.wm.after(0,self.show,self.csl,f'{num}','green')
-        self.wm.after(0,self.show,self.csl,'>>>','purple')
+        self.wm.after(0,self.show,self.csl,'green',f'{num}')
+        self.wm.after(0,self.show,self.csl,'purple','>>>')
     def rplc(self,al=0)->None:
         '''text replace for text editor'''
         schtx,rplctx=self.schvars[0].get(),self.schvars[1].get()
@@ -1250,7 +1257,7 @@ class Fabits:
         json.dump(self.cfg,fl,ensure_ascii=0,indent=4); fl.close()
         if self.reboot:
             now=sys.executable
-            if __file__.endswith('.py'):
+            if sys.argv[0].endswith('.py'):
                 if self.appargs: subprocess.Popen([now,sys.argv[0],self.appargs])
                 else: subprocess.Popen([now,sys.argv[0]])
             else:
@@ -1328,7 +1335,7 @@ class Fabits:
         if funknd==1:
             num=self.wminp('输入字符密度',int)
             if num is None: return
-        self.thr(lambda: self.txpre(tx,new,num,funknd))
+        self.thr(self.txpre,tx,new,num,funknd)()
     def txmng(self)->None:
         '''text manager'''
         tx,txemp=self.cretpl('文本处理',24,11,'txmng',0,7)
@@ -1370,8 +1377,8 @@ class Fabits:
             fl=open(new,'w',encoding=enc); fl.write(res); fl.close()
         else:
             self.txet[1][0].delete(0,'end'); self.txet[1][0].insert('end',res)
-        self.wm.after(0,self.show,self.csl,'进程已结束','red')
-        self.wm.after(0,self.show,self.csl,'>>>','purple')
+        self.wm.after(0,self.show,self.csl,'red','进程已结束')
+        self.wm.after(0,self.show,self.csl,'purple','>>>')
     def txrdcmd(self,idx:int,knd:int)->None:
         '''command for text manager radiobutton'''
         self.txet[idx][knd].config(state='normal')
