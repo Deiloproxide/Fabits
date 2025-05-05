@@ -10,10 +10,9 @@
 import chardet,ctypes,hashlib,math,multiprocessing,numpy,json,os,random
 import requests,subprocess,sys,threading,time,tkinter,turtle,webbrowser
 from PIL import Image; from tkinter import filedialog,messagebox,ttk
-multiprocessing.freeze_support()
-pullst=numpy.zeros(shape=(38000,4),dtype=int)
-prolst=numpy.zeros(38000); protmp=numpy.zeros(shape=(52,91,5,2))
 def avgs(nm:str)->numpy.floating: return numpy.mean(numpy.array(Image.open(nm).convert('L')))
+multiprocessing.freeze_support(); protmp=numpy.zeros(shape=(52,91,5,2))
+pullst=numpy.zeros(shape=(38000,4),dtype=int); prolst=numpy.zeros(38000)
 class Fabits:
     '''Fabits app class'''
     def __init__(self)->None:
@@ -23,10 +22,9 @@ class Fabits:
     def adconf(self)->None:
         '''add main window widget and style'''
         self.cvs=tkinter.Canvas(self.wm); scrn=turtle.TurtleScreen(self.cvs)
-        self.tul=turtle.RawTurtle(scrn)
-        self.wmemp=[ttk.Frame(self.wm) for i in range(2)]
-        self.csl=self.cretre(self.wmemp[0])
-        self.clear(self.csl); txslb=tkinter.Scrollbar(self.wmemp[1])
+        self.tul=turtle.RawTurtle(scrn); self.wmemp=[ttk.Frame(self.wm) for i in range(2)]
+        self.csl=self.cretre(self.wmemp[0]); self.clear(self.csl)
+        txslb=tkinter.Scrollbar(self.wmemp[1])
         self.edtr=tkinter.Text(self.wmemp[1],undo=1,yscrollcommand=txslb.set)
         txslb.config(command=self.edtr.yview)
         self.edtr.bind('<Key>',lambda s: self.chgcfg())
@@ -35,10 +33,11 @@ class Fabits:
         self.wm.config(bg=self.bg); scrn.bgcolor(self.bg)
         self.edtr.config(insertbackground=self.fg,font=fnt)
         self.edtr.config(background=self.bg,foreground=self.fg)
-        if self.bgidx: sty.theme_use('clam')
+        if self.bgidx:
+            sty.theme_use('clam')
         sty.configure('.',background=self.bgin,fieldbackground=self.bg)
         sty.configure('.',foreground=self.fg,font=self.fnt)
-        sty.configure('Treeview',font=fnt,rowheight=self.scfac)
+        sty.configure('Treeview',font=fnt,rowheight=self.scfac,background=self.bgin)
     def adend(self)->None:
         '''add end to file without end'''
         self.wm.after(0,self.show,self.csl,'cyan','(1/2)打开')
@@ -471,10 +470,13 @@ class Fabits:
         while tmptx: self.show(tag,cl,tmptx); idx+=45; tmptx=tx[idx:idx+45]
     def cretpl(self,tle:str,w:int,h:int,wid:str,re:int,num:int)->tuple[tkinter.Toplevel,list[ttk.Frame]]:
         '''create toplevel and frame'''
-        tpl=tkinter.Toplevel(self.wm); tpl.geometry(self.calsz(w,h,wid))
+        tpl=tkinter.Toplevel(self.wm); tpl.withdraw(); tpl.geometry(self.calsz(w,h,wid))
         tpl.resizable(re,re); tpl.transient(self.wm); tpl.title(tle)
         tpl.protocol('WM_DELETE_WINDOW',lambda: self.wmqut(tpl,wid))
-        emps=[ttk.Frame(tpl) for i in range(num)]; return tpl,emps
+        if self.bgidx:
+            tpl.update(); val=ctypes.c_int(2); prt=ctypes.windll.user32.GetParent(tpl.winfo_id())
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(prt,20,ctypes.byref(val),ctypes.sizeof(val))
+        tpl.deiconify(); emps=[ttk.Frame(tpl) for i in range(num)]; return tpl,emps
     def cretre(self,tag:ttk.Frame)->ttk.Treeview:
         '''create treeview with a xview side scrollbar'''
         slb=tkinter.Scrollbar(tag)
@@ -621,7 +623,7 @@ class Fabits:
             lhdg+=2
     def icc(self,show:int,new=0)->None:
         '''display icon icc'''
-        if not show: self.wm.after(0,self.ice,new); return
+        if not show: self.ice(new); return
         self.wmemp[0].pack_forget(); szfun=lambda x: round(x*self.scfac)
         self.clrtul(); self.cvs.pack(fill='both',expand=1)
         self.icon(self.data['icc'],60,szfun(0.5),iter('d'))
@@ -677,7 +679,7 @@ class Fabits:
         calbk=lambda *args: self.mulpgu(lnm)
         for i in lnmr:
             nm=self.fulnm(pth,names[i])
-            tsk=pol.apply_async(avgs,args=[nm],callback=calbk)
+            tsk=pol.apply_async(avgs,args=(nm,),callback=calbk)
             res[i][0]=tsk; res[i][2]=nm
         pol.close(); pol.join(); self.wm.after(1000,self.wmqut,self.pg,'pgini')
         for i in lnmr: res[i][1]=res[i][0].get()
@@ -692,7 +694,7 @@ class Fabits:
         '''initialize program necessarity'''
         try:
             self.scfac=ctypes.windll.shcore.GetScaleFactorForDevice(0)//5
-            ctypes.windll.shcore.SetProcessDpiAwareness(1)
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)
         except: self.scfac=20
         self.wm=tkinter.Tk()
         try: self.wm.iconphoto(1,tkinter.PhotoImage(file='Na.png')); self.wm.withdraw()
@@ -1420,7 +1422,7 @@ class Fabits:
         inp.wait_window(); return self.val
     def wmqut(self,arg,key:str):
         wth,hgt,spacex,spacey=arg.winfo_width(),arg.winfo_height(),arg.winfo_x(),arg.winfo_y()
-        self.cfg[key]=f'{wth}x{hgt}+{spacex}+{spacey}'; arg.destroy()
+        self.cfg[key]=f'{wth}x{hgt+self.scfac}+{spacex}+{spacey}'; arg.destroy()
     def wmset(self)->None:
         '''set const and setting for app start'''
         self.scwth,self.schgt=self.wm.winfo_screenwidth(),self.wm.winfo_screenheight()
@@ -1435,6 +1437,10 @@ class Fabits:
             self.fntknd+=f'{i} ' if self.cfg[i] else ''
         if not self.fntknd: self.fntknd='normal'
         if self.bgidx==2: lctime=time.localtime(); self.bgidx=0 if 6<=lctime.tm_hour<18 else 1
+        if self.bgidx:
+            self.wm.update(); val=ctypes.c_int(2)
+            prt=ctypes.windll.user32.GetParent(self.wm.winfo_id())
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(prt,20,ctypes.byref(val),ctypes.sizeof(val))
         self.bg=self.data['bg'][self.bgidx]; self.fg=self.data['fg'][self.bgidx]
         self.bgin=self.data['bgin'][self.bgidx]; self.wm.geometry(self.calsz(64,36,'Fabits'))
         self.wm.protocol('WM_DELETE_WINDOW',self.savcfg); self.wm.title(self.data['tle'])
