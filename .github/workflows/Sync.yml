@@ -15,7 +15,7 @@ jobs:
             -w ${{ github.workspace }} \
             -e PLUGIN_TARGET_URL="https://cnb.cool/Deiloproxide/Fabits.git" \
             -e PLUGIN_AUTH_TYPE="https" \
-            -e PLUGIN_USERNAME="王楠" \
-            -e PLUGIN_PASSWORD=${{ secrets.GIT_PASSWORD }} \
+            -e PLUGIN_USERNAME="Deiloproxide" \
+            -e PLUGIN_PASSWORD=${{ secrets.Sync }} \
             -e PLUGIN_FORCE="true" \
             tencentcom/git-sync
