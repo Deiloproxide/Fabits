@@ -1,5 +1,5 @@
 {
-    "curvsn": "v2.0.0",
+    "curvsn": "v2.1.0",
     "bg": ["#FFFFFF", "#1F1F1F"],
     "fg": ["#000000", "#D4D4D4"],
     "bgin": ["#F0F0F0", "#181818"],
@@ -8,6 +8,9 @@
     "web": "https://nahida520.love",
     "proj": "https://github.com/Deiloproxide/Fabits",
     "latest": "https://api.github.com/repos/Deiloproxide/Fabits/releases/latest",
+    "pics": {
+        "文件(F)": "File", "算法(A)": "Algorithm", "批处理(B)": "Batch",
+        "网络(I)": "Internet", "工具(T)": "Tools", "设置(S)": "Settings"},
     "fonts": [
         "Arial", "Arial Black", "Bahnschrift", "Calibri", "Cambria",
         "Cambria Math", "Candara", "Cascadia Code", "Cascadia Mono",
@@ -36,17 +39,19 @@
             "B站传送门:https://space.bilibili.com/500203556",
             "邮箱:246002083@nbu.edu.cn"],
         "F": [
-            "Fabits", "版本:v2.0.0",
+            "Fabits", "版本:v2.1.0",
             "此软件是开源自由免费软件",
             "可在特定条款下分发,详细查看",
             "https://opensource.org/license/MIT",
             "圣·西门科技股份有限公司 出品",
             "Sig·WestGate Tech. L.C.D. present."]},
-    "tmplt":["1.后缀模板", "2.文件名模板", "3.访问时间模板", "4.修改时间模板", "5.创建时间模板"],
-    "tmplts":[
-        "{ext}_{index:04d}", "{name}_{index:04d}", "{Y_a}{m_a:02d}{D_a:02d}_{H_a:02d}{M_a:02d}{S_a:02d}",
-        "{Y_m}{m_m:02d}{D_m:02d}_{H_m:02d}{M_m:02d}{S_m:02d}", "{Y_c}{m_c:02d}{D_c:02d}_{H_c:02d}{M_c:02d}{S_c:02d}"],
-    "failmsg":"转换成功{}个,失败{}个\n可能文件正在被占用,命名重复,\n权限不足或者杀毒软件阻止",
+    "tmplt": ["1.后缀模板", "2.文件名模板", "3.访问时间模板", "4.修改时间模板", "5.创建时间模板"],
+    "tmplts": [
+        "{ext}_{index:04d}", "{name}_{index:04d}",
+        "{Y_a}{m_a:02d}{D_a:02d}_{H_a:02d}{M_a:02d}{S_a:02d}",
+        "{Y_m}{m_m:02d}{D_m:02d}_{H_m:02d}{M_m:02d}{S_m:02d}",
+        "{Y_c}{m_c:02d}{D_c:02d}_{H_c:02d}{M_c:02d}{S_c:02d}"],
+    "failmsg": "转换成功{}个,失败{}个\n可能文件正在被占用,命名重复,\n权限不足或者杀毒软件阻止",
     "ups5": [
         "温迪", "可莉", "达达利亚", "钟离", "阿贝多", "甘雨", "魈", "胡桃", "优菈", "枫原万叶",
         "神里绫华", "宵宫", "雷电将军", "珊瑚宫心海", "荒泷一斗", "申鹤", "八重神子", "神里绫人",
@@ -73,7 +78,9 @@
         "元素充能效率", "暴击率", "暴击伤害", "元素精通 ", "治疗加成"],
     "itmknd": ["生之花", "死之羽", "时之沙", "空之杯", "理之冠"],
     "elmnkd": "火水风雷草冰岩 ",
-    "mns": [[[3], [1]], [[4], [1]], [[-1, 6, 9], [8, 1, 1]], [[-1, -2, 9], [23, 16, 1]], [[-1, 7, 8, 10, 9], [33, 5, 5, 5, 2]]],
+    "mns": [
+        [[3], [1]], [[4], [1]], [[-1, 6, 9], [8, 1, 1]],
+        [[-1, -2, 9], [23, 16, 1]], [[-1, 7, 8, 10, 9], [33, 5, 5, 5, 2]]],
     "pptpro": [4, 4, 4, 6, 6, 6, 4, 3, 3, 4],
     "pptupd": [0.7, 0.8, 0.9, 1],
     "pptmax": [5.83, 5.83, 7.29, 298.75, 19.45, 23.15, 6.48, 3.89, 7.77, 23.31],
@@ -89,17 +96,21 @@
         0.486, 0.546, 0.606, 0.666, 0.726, 0.786, 0.846, 0.906, 0.966, 1.000],
     "pro_lst4": [0.051, 0.051, 0.051, 0.051, 0.051, 0.051, 0.051, 0.051, 0.561, 1.071, 1.581],
     "tu_lst": [0.5, 0.55, 0.75, 1],
-    "calbtx":[
+    "calbtx": [
         ["sin", "log", "!", "<", ">", "←", "AC"], ["cos", "P", "C", "√", "(", ")", "÷"],
         ["tan", "^", "7", "8", "9", "e", "×"], ["arcsin", "mod", "4", "5", "6", "π", "-"],
         ["arccos", "|x|", "1", "2", "3", "m", "+"], ["arctan", "M", ",", "0", ".", "ANS", "="]],
+    "rome": {
+        "I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000,
+        "i": 1, "v": 5, "x": 10, "l": 50, "c": 100, "d": 500, "m": 1000},
     "hdnms": {
         "PNG": ".png", "GIF8": ".gif", "PDF": ".pdf", "Rar!": ".rar",
         "FLV": ".flv", "BM": ".bmp", "AVI LIST": ".avi", "8BPS": ".psd",
         "WAVEfmt": ".wav", "MZ": ".exe", "ftypmp": ".mp4", "ftypM4": ".m4a",
         "ÿØÿ": ".jpg", "II*\u0000": ".tiff", "\u001f": ".gz",
         "PK": ".zip", "7Z¼¯'": ".7z", "ID3": ".mp3"},
-    "mb": {"o": "ok", "a": "abort", "r": "retry", "c": "cancel", "y": "yes",
+    "mb": {
+        "o": "ok", "a": "abort", "r": "retry", "c": "cancel", "y": "yes",
         "n": "no", "oc": "okcancel", "yn": "yesno", "ync": "yesnocancel",
         "rc": "retrycancel", "arc": "abortretrycancel", "e": "error",
         "i": "info", "q": "question", "w": "warning"},
