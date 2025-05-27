@@ -18,8 +18,8 @@ class Fabits:
     '''Fabits app main class shared data and io interface'''
     def __init__(self)->None:
         '''initialize app'''
-        self.wmini(); self.adins(); self.wmset(); self.adconf()
-        self.funset(); self.style(); self.icon.icon(self.cfg.get('ani',1))
+        self.wmini(); self.adins(); self.wmset(); self.funset()
+        self.adconf(); self.style(); self.icon.icon(self.cfg.get('ani',1))
         self.admenu(); self.wm.mainloop()
     def adconf(self)->None:
         '''add main window widget and style'''
@@ -37,7 +37,7 @@ class Fabits:
         '''add function example to call'''
         self.adend=Adend(self); self.calc=Calc(self); self.cdmix=Cdmix(self)
         self.clrplc=Clrplc(self); self.cmdmng=Cmdmng(self); self.cmpil=Cmpil(self)
-        self.help=Help(self); self.icon=Icon(self); self.imgsrt=Imgsrt(self)
+        self.hlp=Hlp(self); self.icon=Icon(self); self.imgsrt=Imgsrt(self)
         self.iso=Iso(self); self.itmsth=Itmsth(self); self.lnksrt=Lnksrt(self)
         self.mazen=Mazen(self); self.piccpt=Piccpt(self); self.precfg=Precfg(self)
         self.pro=Pro(self); self.pul=Pul(self); self.rename=Rename(self)
@@ -58,19 +58,20 @@ class Fabits:
             '图片排序':self.imgsrt.imgsrt,'图片加解密':self.piccpt.piccpt},
         '网络(I)':{'项目仓库':lambda: self.web('proj'),'官网':lambda: self.web('web'),
             '检查更新':self.update.update},
-        '工具(T)':{'科学计算器':self.calc.calc,'代码混合器':self.cdmix.cdmix,
+        '工具(T)':{'计算器':self.calc.calc,'代码混合器':self.cdmix.cdmix,
             '命令管理器':self.cmdmng.cmdmng,'编译链接库':self.cmpil.cmpil,
             '圣遗物强化':self.itmsth.itmsth,'迷宫可视化':self.mazen.mazen,
             '抽卡概率计算':self.pro.pro,'抽卡模拟器':self.pul.pul,
             '批量重命名':self.rename.rename,'文本处理':self.txmng.txmng},
-        '设置(S)':{'清空控制台':self.clear,'帮助':self.help.help,
+        '设置(S)':{'清空控制台':lambda: self.clear(self.csl),'帮助':self.hlp.hlp,
             '图标':self.icon.icon,'选项':self.precfg.precfg}}
         sz,fnt=600//self.scfac,lambda fsz: (self.fnt,self.size(fsz),'bold')
-        for i in mnus:
-            img=f"Img/{self.data['pics'][i]}.png"
-            self.mnu.add_cascade(i,img,sz,fnt(0.4),self.scfac/2,self.scfac/2)
-            for j in mnus[i]:
-                self.mnu.add_command(j,fnt(0.32),mnus[i][j],2.5*self.scfac,self.scfac/6)
+        for i in self.imgs:
+            mnulb=self.imgs[i][0]
+            if mnulb is not None:
+                self.mnu.add_cascade(mnulb,self.imgs[i][1],sz,fnt(0.4),self.scfac/2,self.scfac/2)
+                for j in mnus[mnulb]:
+                    self.mnu.add_command(j,fnt(0.32),mnus[mnulb][j],2.5*self.scfac,self.scfac/6)
     def calsz(self,w:int,h:int,key:str)->str:
         '''read last window info or make window center'''
         size=self.cfg.get(key,'')
@@ -137,7 +138,7 @@ class Fabits:
         return pth
     def funset(self)->None:
         '''initialize useful function'''
-        self.clear=lambda tag=self.csl: tag.delete(*tag.get_children())
+        self.clear=lambda tag: tag.delete(*tag.get_children())
         self.clrtul=lambda: (self.tul.reset(),self.tul.ht(),self.tul.speed(0),self.tul.penup())
         self.fulnm=lambda pth,flnm: os.path.join(pth,flnm)
         self.scl=lambda tag: (tag.focus_set(),tag.selection_range(0,'end'))
@@ -215,9 +216,14 @@ class Fabits:
             self.scfac=ctypes.windll.shcore.GetScaleFactorForDevice(0)//5
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
         except: self.scfac=20
-        self.wm=tkinter.Tk()
-        try: self.wm.iconphoto(1,tkinter.PhotoImage(file='Img/Na.png')); self.wm.withdraw()
-        except: self.wm.withdraw(); messagebox.showerror('错误','找不到Na.png'); exit(0)
+        self.wm=tkinter.Tk(); self.wm.withdraw()
+        self.imgs={'Na':[None,None],'Fl':['文件(F)',None],'Al':['算法(A)',None],
+                   'Ba':['批处理(B)',None],'In':['网络(I)',None],
+                   'Tl':['工具(T)',None],'St':['设置(S)',None]}
+        try:
+            for i in self.imgs: self.imgs[i][1]=tkinter.PhotoImage(file=f'Img/{i}.png')
+        except Exception as e: messagebox.showerror('错误',e); exit(0)
+        self.wm.iconphoto(1,self.imgs['Na'][1])
         try:
             fld=open('Json/Data.json','r',encoding='utf-8')
             self.data=json.load(fld); fld.close()
@@ -319,83 +325,37 @@ class Calc:
         '''deal calculate case for scientific calculator'''
         if not self.lexp: return
         try:
-            res=round(self.calstk(),self.acc)
-            self.calshw[0].config(text=str(res)); self.res=res
-        except OverflowError: self.calshw[0].config(text='堆栈错误')
-        except ArithmeticError: self.calshw[0].config(text='数学错误')
-        except ValueError: self.calshw[0].config(text='数学错误')
-        except: self.calshw[0].config(text='语法错误')
+            res=round(self.calcon(),self.acc)
+            self.calscl[0].config(text=str(res)); self.ressci=res
+        except OverflowError: self.calscl[0].config(text='堆栈错误')
+        except ArithmeticError: self.calscl[0].config(text='数学错误')
+        except ValueError: self.calscl[0].config(text='数学错误')
+        except: self.calscl[0].config(text='语法错误')
     def calc(self)->None:
         '''construct window'''
-        self.relnm='科学计算器'
+        self.relnm='计算器'
         if self.io.note.opened(self.relnm): return
-        cal,calemp=self.io.notemp(self.relnm,8)
+        cal,self.calemp=self.io.notemp(self.relnm,2); self.now=0
         fnt=lambda fsz: (self.io.fnt,self.io.size(fsz),'bold')
         self.menu=Navigation(cal,self.io.bgin,self.io.fg,self.io.bg)
-        mnus={'切换计算器(C)':{'科学':lambda: self.calchg(0),'单位':lambda: self.calchg(1),
-              '程序':lambda: self.calchg(2)},'选项(O)':{'精度':self.calset,
-              '退出':lambda: self.io.note.fclose(self.io.note.now)}}
+        mnus={'切换计算器(C)':{'科学计算器':lambda: self.calchg(0),'程序计算器':lambda: self.calchg(1)},
+              '选项(O)':{'精度':self.calset,'退出':lambda: self.io.note.fclose(self.io.note.now)}}
         for i in mnus:
             self.menu.add_cascade(i,font=fnt(0.36),padx=self.io.scfac/3,pady=self.io.scfac/3)
             for j in mnus[i]:
                 self.menu.add_command(j,fnt(0.3),mnus[i][j],2*self.io.scfac,self.io.scfac/6)
-        self.calshw,caltx=[ttk.Label]*2,[' ','I']; self.res=self.m=0.0
-        self.expsyn,self.lexp,self.expidx,self.acc=['']*100,0,0,12
-        self.funs={'sin':math.sin,'cos':math.cos,'tan':math.tan,'arcsin':math.asin,
-                   'arccos':math.acos,'arctan':math.atan,'mod':lambda a,b: a%b,
-                   'log':lambda a,b=math.e: math.log(a,b),'√':lambda a,b=2: a**(1/b)}
-        self.base=[{'C':lambda a,b: math.gamma(a+1)/math.gamma(b+1)/math.gamma(a-b+1),
-                    'P':lambda a,b: math.gamma(a+1)/math.gamma(a-b+1)},
-                   {'^':lambda a,b: a**b},{'×':lambda a,b: a*b,'÷': lambda a,b: a/b},
-                   {'+': lambda a,b=0: a+b,'-': lambda a,b=None: -a if b is None else a-b}]
-        for i in range(2):
-            self.calshw[i]=ttk.Label(calemp[i],text=caltx[i],anchor='e')
-            self.calshw[i].pack(fill='both',expand=1,padx=self.io.scfac/3)
-        for i in range(6):
-            for j in range(7):
-                btntx=self.io.data['calbtx'][i][j]; calbtn=ttk.Button(calemp[i+2],text=btntx)
-                calbtn.config(command=lambda tx=btntx: self.calinp(tx))
-                calbtn.pack(side='left',fill='both',expand=1)
-        ratio=[0.15,0.125]; self.menu.place(relx=0,rely=0,relwidth=ratio[0],relheight=1)
-        for i in range(8):
-            calemp[i].place(relx=ratio[0],rely=i*ratio[1],relwidth=1-ratio[0],relheight=ratio[1])
+        self.calsci(); self.calpgm()
+        self.ratio=0.15; self.menu.place(relx=0,rely=0,relwidth=self.ratio,relheight=1)
+        self.calemp[0].place(relx=self.ratio,rely=0,relwidth=1-self.ratio,relheight=1)
     def calchg(self,knd:int)->None:
         '''change calculator'''
-        pass
-    def calinp(self,tx:str)->None:
-        '''input for scientific calculator'''
-        if tx=='M': self.m=self.res; return
-        elif tx=='=':
-            self.io.thr(self.cal)(); return
-        if tx=='AC': self.expidx,self.lexp=0,0
-        elif tx=='←':
-            if self.expidx!=0:
-                self.expidx-=1; self.lexp-=1
-                for i in range(self.expidx,self.lexp): self.expsyn[i]=self.expsyn[i+1]
-        elif tx=='<':
-            if self.expidx>0: self.expidx-=1
-        elif tx=='>':
-            if self.expidx<self.lexp: self.expidx+=1
-        elif tx=='|x|':
-            for i in range(self.lexp-1,self.expidx-1,-1): self.expsyn[i+2]=self.expsyn[i]
-            self.expsyn[self.expidx]=self.expsyn[self.expidx+1]='|'
-            self.expidx+=2; self.lexp+=2
-        else:
-            for i in range(self.lexp-1,self.expidx-1,-1): self.expsyn[i+1]=self.expsyn[i]
-            self.expsyn[self.expidx]=tx; self.expidx+=1; self.lexp+=1
-        newexp=''.join(self.expsyn[:self.expidx]+['I']+self.expsyn[self.expidx:self.lexp])
-        self.calshw[0].config(text=' '); self.calshw[1].config(text=newexp)
-    def calset(self)->None:
-        '''set remain digest decimal for scientific calculator'''
-        acc=self.io.wminp(f'保留小数位数(当前为{self.acc}位)',int)
-        if acc is None: return
-        self.acc=acc
-        if self.acc<0: self.acc=0
-        if self.acc>15: self.acc=15
-    def calstk(self)->float:
-        '''deal float, () and || in expresion for scientific calculator'''
+        if knd==self.now: return
+        self.calemp[self.now].place_forget(); self.now=knd
+        self.calemp[knd].place(relx=self.ratio,rely=0,relwidth=1-self.ratio,relheight=1)
+    def calcon(self)->None:
+        '''deal const for scientific calculator'''
         expsyn,lexp,dig,digs=['']*100,0,'',1
-        nums,consts='0123456789.',{'m':self.m,'ANS':self.res,'π':math.pi,'e':math.e}
+        nums,consts='0123456789.',{'m':self.msci,'ANS':self.ressci,'π':math.pi,'e':math.e}
         for i in range(self.lexp):
             if self.expsyn[i] in nums: dig+=self.expsyn[i]
             elif self.expsyn[i] in consts: digs*=consts[self.expsyn[i]]
@@ -405,23 +365,186 @@ class Calc:
                 expsyn[lexp]=self.expsyn[i]; lexp+=1; dig,digs='',1
         if dig or isinstance(digs,float):
             digs*=float(dig) if dig else 1.0; expsyn[lexp]=digs; lexp+=1
+        return self.calstk(expsyn,lexp,0,self.calsyn)
+    def calcop(self)->int:
+        '''deal const for program calculator'''
+        expsyn,lexp,dig,digs,base=['']*100,0,'',None,10
+        nums,consts='-0123456789ABCDEF',{'m':self.mpgm,'ANS':self.respgm}
+        bases={'hex':16,'dec':10,'oct':8,'bin':2}
+        for i in range(self.pexp):
+            if self.pgmsyn[i] in bases: base=bases[self.pgmsyn[i]]
+            elif self.pgmsyn[i] in nums: dig+=self.pgmsyn[i]
+            elif self.pgmsyn[i] in consts:
+                if digs==None: digs=1
+                digs*=consts[self.pgmsyn[i]]
+            else:
+                if dig or digs is not None:
+                    if digs is None: digs=1
+                    if not dig: dig='1'
+                    expsyn[lexp]=int(dig,base)*digs; lexp+=1
+                expsyn[lexp]=self.pgmsyn[i]; lexp+=1; dig,digs='',None
+        if dig or digs is not None:
+            if digs is None: digs=1
+            if not dig: dig='1'
+            expsyn[lexp]=int(dig,base)*digs; lexp+=1
+        return self.calstk(expsyn,lexp,1,self.calpyn)
+    def calinp(self,tx:str)->None:
+        '''input for scientific calculator'''
+        if tx=='M': self.msci=self.ressci; return
+        elif tx=='=':
+            self.io.thr(self.cal)(); return
+        if tx=='AC': self.expidx,self.lexp=0,0
+        elif tx=='←':
+            if self.expidx!=0:
+                self.expidx-=1; self.lexp-=1
+                for i in range(self.expidx,self.lexp): self.expsyn[i]=self.expsyn[i+1]
+        elif tx=='<-':
+            if self.expidx>0: self.expidx-=1
+        elif tx=='->':
+            if self.expidx<self.lexp: self.expidx+=1
+        elif tx=='|x|':
+            for i in range(self.lexp-1,self.expidx-1,-1): self.expsyn[i+2]=self.expsyn[i]
+            self.expsyn[self.expidx]=self.expsyn[self.expidx+1]='|'
+            self.expidx+=2; self.lexp+=2
+        else:
+            for i in range(self.lexp-1,self.expidx-1,-1): self.expsyn[i+1]=self.expsyn[i]
+            self.expsyn[self.expidx]=tx; self.expidx+=1; self.lexp+=1
+        newexp=''.join(self.expsyn[:self.expidx]+['I']+self.expsyn[self.expidx:self.lexp])
+        self.calscl[0].config(text=' '); self.calscl[1].config(text=newexp)
+    def calp(self)->None:
+        '''deal calculate case for program calculator'''
+        if not self.pexp: return
+        try:
+            res=self.calcop(); const=int('0x'+'f'*8,16)
+            hres=hex(res) if res>=0 else hex(const+res+1)
+            ores=oct(res) if res>=0 else oct(const+res+1)
+            bres=bin(res) if res>=0 else bin(const+res+1)
+            tx=f'(Bool){bool(res)} (Hex){hres[2:]} (Dec){res} (Oct){ores[2:]} (Bin){bres[2:]}'
+            self.calpgl[0].config(text=tx); self.respgm=res
+        except OverflowError: self.calpgl[0].config(text='堆栈错误')
+        except ArithmeticError: self.calpgl[0].config(text='数学错误')
+        except ValueError: self.calpgl[0].config(text='数学错误')
+        except: self.calpgl[0].config(text='语法错误')
+    def calpnp(self,tx:str)->None:
+        '''input for program calculator'''
+        if tx=='M': self.mpgm=self.respgm; return
+        elif tx=='=':
+            self.io.thr(self.calp)(); return
+        if tx=='AC': self.pgmidx,self.pexp=0,0
+        elif tx=='←':
+            if self.pgmidx!=0:
+                self.pgmidx-=1; self.pexp-=1
+                for i in range(self.pgmidx,self.pexp): self.pgmsyn[i]=self.pgmsyn[i+1]
+        elif tx=='<-':
+            if self.pgmidx>0: self.pgmidx-=1
+        elif tx=='->':
+            if self.pgmidx<self.lexp: self.pgmidx+=1
+        else:
+            for i in range(self.pexp-1,self.pgmidx-1,-1): self.pgmsyn[i+1]=self.pgmsyn[i]
+            self.pgmsyn[self.pgmidx]=tx; self.pgmidx+=1; self.pexp+=1
+        newexp=''.join(self.pgmsyn[:self.pgmidx]+['I']+self.pgmsyn[self.pgmidx:self.pexp])
+        self.calpgl[0].config(text=' '); self.calpgl[1].config(text=newexp)
+    def calpgm(self)->None:
+        '''program calculator'''
+        self.calpgl,caltx=[ttk.Label]*2,[' ','I']; self.respgm=self.mpgm=0
+        self.pgmsyn,self.pexp,self.pgmidx=['']*100,0,0
+        self.funsp={'abs':abs,'bool':bool,'~':lambda a: ~a,'!':lambda a: not a}
+        self.basp=[{'^':lambda a,b: int(a**b)},
+                   {'*':lambda a,b: a*b,'/':lambda a,b: a//b,'%':lambda a,b: a%b},
+                   {'+':lambda a,b=0: a+b,'-':lambda a,b=None: -a if b is None else a-b},
+                   {'<<':lambda a,b: a<<b,'>>':lambda a,b: a>>b},
+                   {'<':lambda a,b: a<b,'>':lambda a,b: a>b,
+                    '<=':lambda a,b: a<=b,'>=':lambda a,b: a>=b},
+                   {'==':lambda a,b: a==b,'!=':lambda a,b: a!=b},
+                   {'&':lambda a,b: a&b},{'⊕':lambda a,b: a^b,
+                    '⊙':lambda a,b: ~(a^b)},{'|':lambda a,b: a|b},
+                   {'&&':lambda a,b: bool(a and b)},{'xor':lambda a,b: bool(a^b),
+                    'nxor':lambda a,b: not a^b},{'||':lambda a,b: bool(a or b)}]
+        calemp=[ttk.Frame(self.calemp[1]) for i in range(9)]; calbtx=self.io.data['calpgm']
+        for i in range(2):
+            self.calpgl[i]=ttk.Label(calemp[i],text=caltx[i],anchor='e')
+            self.calpgl[i].pack(fill='both',expand=1,padx=self.io.scfac/3)
+        for i in range(7):
+            for j in range(8):
+                calbtn=ttk.Button(calemp[i+2],text=calbtx[i][j])
+                calbtn.config(command=lambda tx=calbtx[i][j]: self.calpnp(tx))
+                calbtn.pack(side='left',fill='both',expand=1)
+        for i in range(9): calemp[i].pack(fill='both',expand=1)
+    def calpyn(self,expsyn:list,lexp:int)->int:
+        '''calculate value of expresion for program calculator'''
+        rl,tsyn,rsyn,chg=lexp,[any]*100,[any]*100,1
+        for i in range(lexp): rsyn[i]=expsyn[i]
+        while chg:
+            tl,flg,chg=0,0,0
+            for i in range(rl):
+                if flg: flg=0; continue
+                elif rsyn[i] in self.funsp:
+                    if isinstance(rsyn[i+1],int):
+                        tsyn[tl]=self.funsp[rsyn[i]](rsyn[i+1]); tl+=1; chg=flg=1
+                    else: tsyn[tl]=rsyn[i]; tl+=1
+                else: tsyn[tl]=rsyn[i]; tl+=1
+            for i in range(tl): rsyn[i]=tsyn[i]
+            rl=tl
+        for i in self.basp:
+            j,flg,rl=0,0,0
+            while j<tl:
+                if tsyn[j] in i:
+                    if j==0: rsyn[rl]=i[tsyn[j]](tsyn[j+1]); rl+=1
+                    else: rsyn[rl-1]=i[tsyn[j]](rsyn[rl-1],tsyn[j+1])
+                    j+=1
+                else: rsyn[rl]=tsyn[j]; rl+=1
+                j+=1
+            for j in range(rl): tsyn[j]=rsyn[j]
+            tl=rl
+        if rl==1: return rsyn[0]
+        else: raise SyntaxError
+    def calsci(self)->None:
+        '''scientific calculator'''
+        self.calscl,caltx=[ttk.Label]*2,[' ','I']; self.ressci=self.msci=0.0
+        self.expsyn,self.lexp,self.expidx,self.acc=['']*100,0,0,12
+        self.funs={'sin':math.sin,'cos':math.cos,'tan':math.tan,'arcsin':math.asin,
+                   'arccos':math.acos,'arctan':math.atan,'mod':lambda a,b: a%b,
+                   'log':lambda a,b=math.e: math.log(a,b),'√':lambda a,b=2: a**(1/b)}
+        self.base=[{'C':lambda a,b: math.gamma(a+1)/math.gamma(b+1)/math.gamma(a-b+1),
+                    'P':lambda a,b: math.gamma(a+1)/math.gamma(a-b+1)},
+                   {'^':lambda a,b: a**b},{'×':lambda a,b: a*b,'÷':lambda a,b: a/b},
+                   {'+':lambda a,b=0: a+b,'-':lambda a,b=None: -a if b is None else a-b}]
+        calemp=[ttk.Frame(self.calemp[0]) for i in range(8)]; calbtx=self.io.data['calsci']
+        for i in range(2):
+            self.calscl[i]=ttk.Label(calemp[i],text=caltx[i],anchor='e')
+            self.calscl[i].pack(fill='both',expand=1,padx=self.io.scfac/3)
+        for i in range(6):
+            for j in range(7):
+                calbtn=ttk.Button(calemp[i+2],text=calbtx[i][j])
+                calbtn.config(command=lambda tx=calbtx[i][j]: self.calinp(tx))
+                calbtn.pack(side='left',fill='both',expand=1)
+        for i in range(8): calemp[i].pack(fill='both',expand=1)
+    def calset(self)->None:
+        '''set remain digest decimal for scientific calculator'''
+        acc=self.io.wminp(f'保留小数位数(当前为{self.acc}位)',int)
+        if acc is None: return
+        self.acc=acc
+        if self.acc<0: self.acc=0
+        if self.acc>15: self.acc=15
+    def calstk(self,expsyn:list,lexp:int,deabs:int=0,fun=None)->any:
+        '''deal bracket in expresion for calculator'''
         stk,top,res=[[0,[None]*100,0] for i in range(20)],0,0
         for i in range(lexp):
             if expsyn[i]=='(': top+=1; stk[top][0]=i
             elif expsyn[i]==')':
                 if top>0 and expsyn[stk[top][0]]=='(':
-                    res=self.calsyn(stk[top][1],stk[top][2]); stk[top][2]=0
+                    res=fun(stk[top][1],stk[top][2]); stk[top][2]=0
                     top-=1; stk[top][1][stk[top][2]]=res; stk[top][2]+=1
                 else: raise SyntaxError
-            elif expsyn[i]=='|':
+            elif expsyn[i]=='|' and not deabs:
                 if top>0 and expsyn[stk[top][0]]=='|':
-                    res=abs(self.calsyn(stk[top][1],stk[top][2])); stk[top][2]=0
+                    res=abs(fun(stk[top][1],stk[top][2])); stk[top][2]=0
                     top-=1; stk[top][1][stk[top][2]]=res; stk[top][2]+=1
                 else: top+=1; stk[top][0]=i
             else: stk[top][1][stk[top][2]]=expsyn[i]; stk[top][2]+=1
             if top>=20: raise OverflowError
         if top!=0: raise SyntaxError
-        return self.calsyn(stk[top][1],stk[top][2])
+        return fun(stk[top][1],stk[top][2])
     def calsyn(self,expsyn:list,lexp:int)->float|tuple:
         '''calculate value of expresion for scientific calculator'''
         tl,rl,tsyn,rsyn,chg=lexp,0,[any]*100,[any]*100,1
@@ -480,7 +603,7 @@ class Cdmix:
         '''open or save path for code mix'''
         tles=['打开','打开','保存']; knds=[('Python source files','*.py'),
             ('C/C++ source files','*.c *.cpp'),('All text files','*.*')]
-        pth=self.io.dlg(idx//2+1,tles[knd],knds[knd])
+        pth=self.io.dlg(knd//2+1,tles[knd],knds[knd])
         if not pth: return
         self.cdvar[knd].set(pth)
     def cdgen(self)->None:
@@ -649,6 +772,28 @@ class Cmdmng:
 class Cmpil:
     '''command compile'''
     def __init__(self,io:Fabits)->None: self.io=io
+    def cmpadd(self)->None:
+        '''open or save path for command compile'''
+        pth=self.io.dlg(1,'打开',('C/C++ source files','*.c *.cpp'))
+        if not pth: return
+        self.cmpvar[0].set(pth)
+    def cmpchk(self,pre:int=0)->None:
+        '''check input and run compile for command compile'''
+        pth=self.cmpvar[0].get()
+        if not pth: self.io.mb('w','o','提示','请检查输入的内容'); return
+        flnm,ext=os.path.splitext(pth); args=self.cmpvar[1].get()
+        if ext=='.c': gcc='gcc'
+        elif ext=='.cpp': gcc='g++'
+        else: self.io.mb('w','o','提示','请检查输入的内容'); return
+        try: fl=open(pth,'rb')
+        except: return
+        datas=fl.read(); fl.close(); enc=chardet.detect(datas)['encoding'] or 'utf-8'
+        enc=f'-finput-charset={enc} -fexec-charset={enc}'
+        if self.cmpknd.get(): cmd=f'{gcc} {enc} -o \"{flnm}.exe\" \"{pth}\" {args}'
+        else: cmd=f'{gcc} {enc} -shared -o \"{flnm}.dll\" \"{pth}\" {args}'
+        self.io.wm.after(0,self.cmpprt,cmd,'green')
+        if pre: return
+        self.cmpout(cmd)
     def cmpil(self)->None:
         '''construct window'''
         self.relnm='编译链接库'
@@ -674,28 +819,6 @@ class Cmpil:
             cmpbtn.pack(side='right',padx=self.io.scfac/3)
         for i in range(3): cmpemp[i].pack(fill='x',pady=self.io.scfac/3)
         cmpemp[3].pack(fill='x',side='bottom',pady=self.io.scfac/3)
-    def cmpadd(self)->None:
-        '''open or save path for command compile'''
-        pth=self.io.dlg(1,'打开',('C/C++ source files','*.c *.cpp'))
-        if not pth: return
-        self.cmpvar[0].set(pth)
-    def cmpchk(self,pre:int=0)->None:
-        '''check input and run compile for command compile'''
-        pth=self.cmpvar[0].get()
-        if not pth: self.io.mb('w','o','提示','请检查输入的内容'); return
-        flnm,ext=os.path.splitext(pth); args=self.cmpvar[1].get()
-        if ext=='.c': gcc='gcc'
-        elif ext=='.cpp': gcc='g++'
-        else: self.io.mb('w','o','提示','请检查输入的内容'); return
-        try: fl=open(pth,'rb')
-        except: return
-        datas=fl.read(); fl.close(); enc=chardet.detect(datas)['encoding'] or 'utf-8'
-        enc=f'-finput-charset={enc} -fexec-charset={enc}'
-        if self.cmpknd.get(): cmd=f'{gcc} {enc} -o \"{flnm}.exe\" \"{pth}\" {args}'
-        else: cmd=f'{gcc} {enc} -shared -o \"{flnm}.dll\" \"{pth}\" {args}'
-        self.io.wm.after(0,self.cmpprt,cmd,'green')
-        if pre: return
-        self.cmpout(cmd)
     def cmpout(self,cmd:str)->None:
         '''print command line message'''
         pipe=subprocess.Popen(cmd,shell=1,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=1)
@@ -709,14 +832,14 @@ class Cmpil:
         '''multiline print'''
         idx=0; tmptx=tx[idx:idx+80]
         while tmptx: self.io.show(self.io.csl,cl,tmptx); idx+=80; tmptx=tx[idx:idx+80]
-class Help:
+class Hlp:
     '''help page'''
     def __init__(self,io:Fabits)->None: self.io=io
-    def help(self)->None:
+    def hlp(self)->None:
         '''construct window'''
         self.relnm='帮助'
         hlp,hlpemp=self.io.notemp(self.relnm,1); hlptx=self.io.data['hlp']
-        hlpmnu={'帮助内容(I)':{i:lambda knd=hlptx[i]: self.hlpshw(knd) for i in hlptx},
+        hlpmnu={'帮助内容(I)':{hlptx[i]:lambda knd=i: self.hlpshw(knd) for i in hlptx},
                 '选项(O)':{'退出':lambda: self.io.note.fclose(self.io.note.now)}}
         self.menu=Navigation(hlp,self.io.bgin,self.io.fg,self.io.bg)
         fnt=lambda fsz: (self.io.fnt,self.io.size(fsz),'bold')
@@ -789,12 +912,7 @@ class Icon:
 class Imgsrt:
     '''image sort'''
     def __init__(self,io:Fabits)->None: self.io=io
-    def imgsrt(self)->None:
-        '''directory input'''
-        self.io.show(self.io.csl,'cyan','(1/3)打开')
-        self.imgext=['.png','.jpg','.jpeg','.bmp','.gif','.ico','.ico']
-        self.pth=self.io.dlg(0,'打开'); self.io.thr(self.mulsrt)()
-    def mulsrt(self)->None:
+    def imgren(self)->None:
         '''multiprocess sort'''
         try:
             getext=lambda fl: os.path.splitext(fl)[-1]
@@ -805,7 +923,7 @@ class Imgsrt:
             lnmr,cnt=range(self.lnm),multiprocessing.cpu_count()
             res,pol=[[None,0,'',''] for i in lnmr],multiprocessing.Pool(processes=cnt)
             self.io.thrpg('图片排序',self.lnm); self.picnt=0
-            calbk=lambda *args: self.mulupd()
+            calbk=lambda *args: self.imgupd()
             try:
                 for i in lnmr:
                     nm=self.io.fulnm(self.pth,names[i])
@@ -824,7 +942,12 @@ class Imgsrt:
                 os.rename(self.io.fulnm(self.pth,res[i][3]),self.io.fulnm(self.pth,f'pic{res[i][3]}'))
         self.io.thrshw('red','进程已结束')
         self.io.thrshw('purple','>>>')
-    def mulupd(self)->None:
+    def imgsrt(self)->None:
+        '''directory input'''
+        self.io.show(self.io.csl,'cyan','(1/3)打开')
+        self.imgext=['.png','.jpg','.jpeg','.bmp','.gif','.ico','.ico']
+        self.pth=self.io.dlg(0,'打开'); self.io.thr(self.imgren)()
+    def imgupd(self)->None:
         '''update progressbar for image sort multiprocessing callback'''
         self.picnt+=1
         if not self.picnt%2:
@@ -933,13 +1056,6 @@ class Itmsth:
 class Lnksrt:
     '''link sort class'''
     def __init__(self,io:Fabits)->None: self.io=io
-    def lnksrt(self)->None:
-        '''input for link bubble sort'''
-        self.lnks=self.io.wminp('输入链表')
-        if self.lnks is None: return
-        self.head=self.io.wminp('输入头地址',int)
-        if self.head is None: return
-        self.io.thr(self.lnkcal)()
     def lnkcal(self)->None:
         '''link bubble sort'''
         lnk=json.loads(self.lnks); llnk,cur=0,self.head
@@ -954,6 +1070,13 @@ class Lnksrt:
                 p,q,r=r,p,lnk[r][1]
         self.io.thrshw('green',f'{lnk},head={self.head}')
         self.io.thrshw('purple','>>>')
+    def lnksrt(self)->None:
+        '''input for link bubble sort'''
+        self.lnks=self.io.wminp('输入链表')
+        if self.lnks is None: return
+        self.head=self.io.wminp('输入头地址',int)
+        if self.head is None: return
+        self.io.thr(self.lnkcal)()
 class Mazen:
     '''visual maze'''
     def __init__(self,io:Fabits)->None: self.io=io
@@ -1060,7 +1183,7 @@ class Navigation(ttk.Frame):
         '''initialize navigation widget'''
         super().__init__(parent); self.bg,self.fg,self.hl=bg,fg,hl
         self.state:dict[str:list[tkinter.PhotoImage,int]]={}
-    def add_cascade(self,tx:str,ico:str=None,size=1,font=None,padx=0,pady=0)->None:
+    def add_cascade(self,tx:str,ico=None,size=1,font=None,padx=0,pady=0)->None:
         '''add top menu'''
         item=ttk.Frame(self); main=tkinter.Frame(item,bg=self.bg,padx=padx,pady=pady)
         self.subs=ttk.Frame(item)
@@ -1068,7 +1191,7 @@ class Navigation(ttk.Frame):
         dire=tkinter.Label(main,text='▶',bg=self.bg,fg=self.fg)
         show=lambda arg,text=tx,subs=self.subs,dirl=dire: self.disp(text,subs,dirl)
         if ico:
-            self.state[tx]=[tkinter.PhotoImage(file=ico).subsample(size),0]
+            self.state[tx]=[ico.subsample(size),0]
             icon=tkinter.Label(main,image=self.state[tx][0],bg=self.bg)
             icon.pack(side='left')
             on=lambda arg,args=[main,icon,text,dire]: self.light(args,1)
@@ -1106,14 +1229,15 @@ class NotebookPlus(ttk.Notebook):
     '''notebook widget with some function'''
     def __init__(self,parent,io:Fabits)->None:
         '''construct window'''
-        self.io=io; super().__init__(parent); self.funset(); self.adarg()
+        self.io=io; super().__init__(parent)
+        self.now=self.cur=None; self.count,self.emp,self.card=1,'未命名文件',[]
+        self.funset(); self.adarg()
         self.menu=tkinter.Menu(self,tearoff=0)
         self.menu.add_command(label='关闭',command=lambda: self.fclose(self.cur))
         self.menu.add_command(label='全部关闭',command=self.clsall)
         self.menu.config(bg=self.io.bg,fg=self.io.fg)
         self.bind('<ButtonRelease-3>',lambda arg: self.right(arg))
         self.bind('<<NotebookTabChanged>>',lambda arg: self.change())
-        self.now=self.cur=None; self.count,self.emp,self.card=1,'未命名文件',[]
     def adarg(self)->None:
         '''add file when open with a file'''
         if len(sys.argv)>1:
@@ -1460,9 +1584,6 @@ class Pro:
 class Pul:
     '''pull for tools for Genshin Impact'''
     def __init__(self,io:Fabits)->None: self.io=io
-    def pulclr(self)->None:
-        '''clear pul result'''
-        self.io.clear(self.pultre); self.res={}
     def pul(self)->None:
         '''construct window'''
         self.relnm='抽卡模拟器'
@@ -1504,17 +1625,6 @@ class Pul:
             self.res[up]=[0,item]
         self.res[up][0]+=1
         self.pultre.set(self.res[up][1],column='opt',value=f'{up}:{self.res[up][0]}')
-    def pulchk(self)->None:
-        '''add up pull for'''
-        resups=['']*4
-        for i in range(4):
-            up=self.pulvar[i].get()
-            if up in resups: self.io.mb('w','o','选择角色重复','请重新选择'); return
-            resups[i]=up
-        for i in range(4):
-            self.ups[i]=resups[i]; self.io.show(self.io.csl,'red',f'角色{self.ups[i]}添加成功!')
-        upstx=f'当前角色:{self.ups[0]},{self.ups[1]},{self.ups[2]},{self.ups[3]}'
-        self.pullb.config(text=f'祈愿结果({upstx})')
     def pulcal(self,num:int)->None:
         '''generate pull'''
         if not self.ups[0]: return
@@ -1548,6 +1658,20 @@ class Pul:
                 self.put5,self.put4=self.put5+1,self.put4+1; self.puladd(3,up3)
         self.io.show(self.io.csl,'cyan',f'垫{self.put5}发')
         self.io.show(self.io.csl,'purple','>>>')
+    def pulchk(self)->None:
+        '''add up pull for'''
+        resups=['']*4
+        for i in range(4):
+            up=self.pulvar[i].get()
+            if up in resups: self.io.mb('w','o','选择角色重复','请重新选择'); return
+            resups[i]=up
+        for i in range(4):
+            self.ups[i]=resups[i]; self.io.show(self.io.csl,'red',f'角色{self.ups[i]}添加成功!')
+        upstx=f'当前角色:{self.ups[0]},{self.ups[1]},{self.ups[2]},{self.ups[3]}'
+        self.pullb.config(text=f'祈愿结果({upstx})')
+    def pulclr(self)->None:
+        '''clear pul result'''
+        self.io.clear(self.pultre); self.res={}
     def pulset(self)->None:
         '''clear pul data'''
         self.ups,self.put5,self.put4,self.true_up5,self.true_up4,self.fu=['']*4,0,0,0,0,0

@@ -1,5 +1,5 @@
 {
-    "curvsn": "v2.1.0",
+    "curvsn": "v2.1.1",
     "bg": ["#FFFFFF", "#1F1F1F"],
     "fg": ["#000000", "#D4D4D4"],
     "bgin": ["#F0F0F0", "#181818"],
@@ -8,9 +8,6 @@
     "web": "https://nahida520.love",
     "proj": "https://github.com/Deiloproxide/Fabits",
     "latest": "https://api.github.com/repos/Deiloproxide/Fabits/releases/latest",
-    "pics": {
-        "文件(F)": "File", "算法(A)": "Algorithm", "批处理(B)": "Batch",
-        "网络(I)": "Internet", "工具(T)": "Tools", "设置(S)": "Settings"},
     "fonts": [
         "Arial", "Arial Black", "Bahnschrift", "Calibri", "Cambria",
         "Cambria Math", "Candara", "Cascadia Code", "Cascadia Mono",
@@ -31,7 +28,7 @@
         "SimHei", "SimSun", "SimSun-ExtB", "SimSun-ExtG", "Sitka Text","Sylfaen",
         "Symbol", "Tahoma", "Times New Roman", "TkDefaultFont", "Trebuchet MS",
         "Verdana", "Webdings", "Wingdings", "Yu Gothic", "Yu Gothic UI"],
-    "hlp": {"功能说明": "D", "关于作者": "A", "新内容": "N", "关于": "F"},
+    "hlp": {"D": "功能说明", "A": "关于作者", "N": "新内容", "F": "关于"},
     "hlps": {
         "A": [
             "关于作者", "红石社Deiloproxide",
@@ -39,7 +36,7 @@
             "B站传送门:https://space.bilibili.com/500203556",
             "邮箱:246002083@nbu.edu.cn"],
         "F": [
-            "Fabits", "版本:v2.1.0",
+            "Fabits", "版本:v2.1.1",
             "此软件是开源自由免费软件",
             "可在特定条款下分发,详细查看",
             "https://opensource.org/license/MIT",
@@ -96,10 +93,15 @@
         0.486, 0.546, 0.606, 0.666, 0.726, 0.786, 0.846, 0.906, 0.966, 1.000],
     "pro_lst4": [0.051, 0.051, 0.051, 0.051, 0.051, 0.051, 0.051, 0.051, 0.561, 1.071, 1.581],
     "tu_lst": [0.5, 0.55, 0.75, 1],
-    "calbtx": [
-        ["sin", "log", "!", "<", ">", "←", "AC"], ["cos", "P", "C", "√", "(", ")", "÷"],
+    "calsci": [
+        ["sin", "log", "!", "<-", "->", "←", "AC"], ["cos", "P", "C", "√", "(", ")", "÷"],
         ["tan", "^", "7", "8", "9", "e", "×"], ["arcsin", "mod", "4", "5", "6", "π", "-"],
         ["arccos", "|x|", "1", "2", "3", "m", "+"], ["arctan", "M", ",", "0", ".", "ANS", "="]],
+    "calpgm": [
+        ["==", "(", ")", "<-", "->", "M", "←", "AC"],["!=", "&&", "bin", "&", "D", "E", "F", "%"],
+        ["<", "||", "oct", "|", "A", "B", "C", "/"],[">", "!", "dec", "~", "7", "8", "9", "*"],
+        ["<=", "xor", "hex", "⊕", "4", "5", "6", "-"],[">=", "nxor", "abs", "⊙", "1", "2", "3", "+"],
+        ["<<", ">>", "bool", "^", "m", "0", "ANS", "="]],
     "rome": {
         "I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000,
         "i": 1, "v": 5, "x": 10, "l": 50, "c": 100, "d": 500, "m": 1000},

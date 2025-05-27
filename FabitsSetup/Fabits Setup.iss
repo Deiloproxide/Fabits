@@ -1,12 +1,8 @@
-;汉化:MonKeyDu 
-;由 Inno Setup 脚本向导 生成的脚本,有关创建 INNO SETUP 脚本文件的详细信息，请参阅文档！!
-
 #define MyAppName "Fabits"
-#define MyAppVersion "1.12.1"
+#define MyAppVersion "2.1.1"
 #define MyAppPublisher "Deiloproxide"
 #define MyAppURL "https://nahida520.love"
 #define MyAppExeName "Fabits.exe"
-
 [Setup]
 ;注意:AppId 的值唯一标识此应用程序。请勿在安装程序中对其他应用程序使用相同的 AppId 值。
 ;（若要生成新的 GUID，请单击“工具”|”在 IDE 中生成 GUID）。
@@ -24,9 +20,9 @@ DisableWelcomePage=no
 DisableReadypage=yes
 ;下行注释，指定安装程序无法运行，除 Arm 上的 x64 和 Windows 11 之外的任何平台上.
 ArchitecturesAllowed=x64compatible
-;WizardImageFile=侧图186x356.bmp
+WizardImageFile=Icon\Side.bmp
 ;WizardSmallImageFile=顶图165x54.bmp,
-;WizardSmallImageFile=顶图54x54.bmp
+WizardSmallImageFile=Icon\Na.bmp
 ;下行注释，强制安装程序在 64 位系统上，但不强制以 64 位模式运行.
 ArchitecturesInstallIn64BitMode=x64compatible
 DefaultGroupName={#MyAppName}
@@ -37,30 +33,23 @@ LicenseFile=..\LICENSE.txt
 PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=..\FabitsSetup
 OutputBaseFilename=Fabits Setup
-SetupIconFile=Na.ico
+SetupIconFile=Icon\Na.ico
 SolidCompression=yes
 WizardStyle=modern
-
 [Languages]
 Name: "chs"; MessagesFile: "compiler:Default.isl"
-
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkablealone
-
 [Files]
 Source: "Fabits\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Fabits\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-
 [code]
 procedure InitializeWizard();
 begin
 WizardForm.LICENSEACCEPTEDRADIO.checked:= true;
 end;
-
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
-

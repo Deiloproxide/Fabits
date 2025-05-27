@@ -1,1 +1,1 @@
-pyinstaller --noconfirm --onedir --windowed --icon Na.ico --contents-directory Libs  ..\Fabits.py
+pyinstaller --onedir --windowed --icon Icon\Na.ico --contents-directory Lib  ..\Fabits.py
