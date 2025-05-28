@@ -47,11 +47,12 @@ class Fabits:
         '''add menu to main window'''
         mnus={
         '文件(F)':{'新建':self.note.fnew,'打开':self.note.fopen,
-            '保存':lambda: self.note.fsave(self.note.now),
+            '保存':lambda: self.note.fsave(self.note.now),'全部保存':self.note.savall,
             '另存为':lambda: self.note.fsave(self.note.now,copy=1),
             '导入':lambda: self.note.fnew(''),'导出':self.note.ext,
             '查找与替换':self.note.schgd,'撤销':self.note.undo,'重做':self.note.redo,
-            '关闭':lambda: self.note.fclose(self.note.now),'退出':self.savcfg},
+            '关闭':lambda: self.note.fclose(self.note.now),
+            '全部关闭':self.note.clsall,'退出':self.savcfg},
         '算法(A)':{'同分异构体数':self.iso.iso,'链表冒泡排序':self.lnksrt.lnksrt,
             '最大环长度':self.ring.ring,'求解罗马数字':self.rome.rome},
         '批处理(B)':{'缺失后缀修复':self.adend.adend,'图片颜色替换':self.clrplc.clrplc,
@@ -110,11 +111,11 @@ class Fabits:
         tag.update(); val=ctypes.c_int(2); ref,sz=ctypes.byref(val),ctypes.sizeof(val)
         prt=ctypes.windll.user32.GetParent(tag.winfo_id())
         ctypes.windll.dwmapi.DwmSetWindowAttribute(prt,20,ref,sz)
-    def cretpl(self,tle:str,w:int,h:int,widg:str,num:int)->tuple[tkinter.Toplevel,list[ttk.Frame]]:
+    def cretpl(self,tle:str,w:int,h:int,tag:str,num:int)->tuple[tkinter.Toplevel,list[ttk.Frame]]:
         '''create toplevel and frame'''
-        tpl=tkinter.Toplevel(self.wm); tpl.withdraw(); tpl.geometry(self.calsz(w,h,widg))
+        tpl=tkinter.Toplevel(self.wm); tpl.withdraw(); tpl.geometry(self.calsz(w,h,tag))
         tpl.resizable(0,0); tpl.transient(self.wm); tpl.title(tle)
-        tpl.protocol('WM_DELETE_WINDOW',lambda: self.wmqut(tpl,widg))
+        tpl.protocol('WM_DELETE_WINDOW',lambda: self.wmqut(tpl,tag))
         try:
             if self.bgidx: self.creblk(tpl)
         except: pass
@@ -852,7 +853,7 @@ class Hlp:
         hlpemp[0].place(relx=ratio,rely=0,relwidth=1-ratio,relheight=1)
     def hlpshw(self,knd:str)->None:
         '''print help message'''
-        self.io.clear(self.hlptre); mdfls={'D':'README.md','N':'NEW.md'}
+        self.io.clear(self.hlptre); mdfls={'D':'HELP.md','N':'NEW.md'}
         if knd in mdfls:
             try: fl=open(mdfls[knd],'r',encoding='utf-8')
             except: self.io.mb('e','o','错误',f'{mdfls[knd]}不存在'); return
@@ -1267,6 +1268,7 @@ class NotebookPlus(ttk.Notebook):
         fl=open(flnm,'wb'); fl.write(byte); fl.close()
     def fclose(self,idx:int,force:int=0)->None:
         '''file close'''
+        if idx is None: return
         if self.isfl(idx):
             if force: self.fsave(idx,force=1)
             elif self.card[idx][3]:
@@ -1337,9 +1339,10 @@ class NotebookPlus(ttk.Notebook):
     def funset(self)->None:
         '''initialize useful function'''
         self.clsall=lambda: [self.fclose(i,1) for i in range(len(self.card)-1,-1,-1)]
-        self.delmk=lambda:  self.remove() if self.last[0] else None
+        self.delmk=lambda: self.remove() if self.last[0] else None
         self.isfl=lambda idx: None if idx is None else self.card[idx][1]
         self.remove=lambda: self.nowsch.tag_remove('match',self.last[0],self.last[1])
+        self.savall=lambda: [self.fsave(i,force=1) for i in range(len(self.card))]
     def getuid(self,idx:int)->str:
         '''get window tag'''
         if idx is None: return None

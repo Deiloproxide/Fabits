@@ -28,7 +28,7 @@
         "SimHei", "SimSun", "SimSun-ExtB", "SimSun-ExtG", "Sitka Text","Sylfaen",
         "Symbol", "Tahoma", "Times New Roman", "TkDefaultFont", "Trebuchet MS",
         "Verdana", "Webdings", "Wingdings", "Yu Gothic", "Yu Gothic UI"],
-    "hlp": {"D": "功能说明", "A": "关于作者", "N": "新内容", "F": "关于"},
+    "hlp": {"D": "功能帮助", "A": "关于作者", "N": "新内容", "F": "关于"},
     "hlps": {
         "A": [
             "关于作者", "红石社Deiloproxide",

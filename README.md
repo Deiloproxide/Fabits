@@ -1,96 +1,71 @@
-# Fabits
+# Fabits（Python / Tkinter）
+![Language](https://img.shields.io/badge/language-Python-brightgreen?style=for-the-badge)
+![Frame](https://img.shields.io/badge/frame-tkinter-red?style=for-the-badge)
+![License](https://img.shields.io/badge/license-MIT-yellow?style=for-the-badge)
+[![GitHub release (latest by tag)](https://img.shields.io/github/v/tag/Deiloproxide/Fabits?style=for-the-badge&color=green&label=latest)](https://github.com/Deiloproxide/Fabits/releases)
 
-需要安装以下包
+Algorithm, file, batch toolbox application build by built-in Tkinter frame in Python, Integrated many functions
+
+![Todo App Screenshot](img/home.png)
+## Feature
+- Modern Text Editor with multitabs, undo, redo and search
+- Two well-designed UI (day mode and Night mode)
+- User configure storage in Json
+- Origin dynamic widgets
+- Calculator for science or program
+- Files process with OS
+- Command tools for programmer
+
+## Datas
+- Fabits data store in `Json/`
+- `Data.json` is read-only, used for database, your modify will be displayed directly in application
+- `Config.json` is managed by program, you needn't manage it manually except add a lot of commands
+
+## Requirements
+- Require below packages
 ```
 chardet
 numpy
 pillow
 requests
 ```
-## 简易的算法，文件，批处理工具箱，提供功能如下：
 
-### 文件(F)：
-- 一些文本编辑器的基本功能
-- 导入：导入`.nda`格式的文本文件
-- 导出：导出`.nda`格式的文本文件
-- 关闭：退出文本编辑器
-- 退出：退出程序
+## Build from Source
+1.Install Python (All the releases were built in Python 3.13.2 but not found features linked to special version yet)
 
-### 算法(A)：
-- 同分异构体数：计算仅针对基团`CnH2n+1`
-  - 输入`n`值并计算相应`CnH2n+1`的同分异构体数量
-- 链表冒泡排序：
-  - 本算法采用`Python`的列表来模拟链表，使用数组索引代替指针，`-1`代替`nullptr`
-  - 输入样例：`head=1` `[[5,2],[1,3],[3,-1],[4,4],[2,0]]`
-- 最大环长度：求解 OEIS 数列`A002326`
-- 求解罗马数字：
-  - 大小写均可使用
+2.Pip install
+```bash
+pip install chardet numpy pillow requests
+```
+3.Git clone
+- (1)Build by Pyinstaller
+```bash
+pip install pyinstaller
+git clone https://github.com/Deiloproxide/Fabits.git
+cd Fabits/FabitsSetup
+.\Pyinstaller_Build.bat
+```
+- (2)Build by Nuitka
+  - Install MSVC or GCC, then run:
+```bash
+pip install nuitka
+git clone https://github.com/Deiloproxide/Fabits.git
+cd Fabits/FabitsSetup
+.\Nuitka_Build.bat
+```
 
-### 批处理(B)：
-- 缺失后缀修复：针对缺失后缀的常用文件补齐后缀
-- 图片颜色替换：
-  - 可替换多个颜色，注意输入颜色之间要用空格分隔
-- 图片排序：图片明暗度排序，方便人工去重
-  - 由于`Python`的`GIL`限制，多线程无法真正发挥加速的作用，于是本功能采用多进程
-- 图片加解密：
-  - 采用对称加密，加密和解密使用同一套算法
-  - 因为`jp(e)g`格式有损压缩的特性，本工具中所有图片处理均以`png`格式为准
+## Contributing
 
-### 网络(I)：
-- 项目仓库
-- 官网
-- 检查更新
+Your contibutions are well-welcome! Please feel free to make comments or submit a pull request
+## Contact
 
-### 工具(T)：
-- 科学计算器：
-  - 部分语法说明：
-  - `log(a,b)`，如果不加第二个参数默认取自然对数
-  - `√(a,b)`，如果不加第二个参数默认取开平方
-  - 排列组合数采用`nPr`，`nCr`
-- 代码混合器：
-  - 将一份`Python`代码和一份`C++`代码混合
-  - 确保混合后的代码既能在`Python`环境中运行，又能在`C` `C++`环境中运行
-  - 且运行结果和各自原来的代码运行结果一致
-- 命令管理器：
-  - 高效地管理与使用命令行，类似于备忘录
-  - 支持添加，修改，删除，预览，运行命令行与命令占位符
-- 编译链接库：
-  - 将`C` `C++`代码编译为`exe`或`dll`
-  - （目前仅支持 GCC 编译器，且需要提前在系统环境变量中配置）
-- 原神相关模拟工具
-  - 抽卡相关功能已支持明光机制，但尚未支持星辉兑换机制
-  - 如果要实现崩铁或绝区零的卡池，请自行修改
-- 迷宫可视化：自动生成与求解迷宫
-- 批量重命名：
-  - 不加扩展名则表示对所有文件都命名
-  - 本工具内置部分参数如下：
-  - `{name}`：文件名
-  - `{index}`：文件在资源管理器中的索引
-  - `{ext}`：文件扩展名
-  - `{Y_a}` `{m_a}` `{D_a}` `{H_a}` `{M_a}` `{S_a}`：文件的最后访问时间
-  - `{Y_m}` `{m_m}` `{D_m}` `{H_m}` `{M_m}` `{S_m}`：文件的最后修改时间
-  - `{Y_c}` `{m_c}` `{D_c}` `{H_c}` `{M_c}` `{S_c}`：文件的创建时间
-  - `{xxxx:0md}`：左填充至宽度为m的整数
-- 文本处理：
-  - 提供如下功能：
-  - 编unicode：将输入文本编码为`unicode`
-  - 生成组合字符：为文本添加附加特效
-  - 解unicode：将部分编码为`unicode`的文本解码为明文
-  - 文本加解密：加密为`.nda`格式的文本文件（同样采用对称加密）
+Deiloproxide - [@Deiloproxide](https://github.com/Deiloproxide)
 
-### 设置(S)：
-- 清屏：清空控制台输出文本
-- 帮助：输出帮助内容
-- 图标：播放入场动画
-- 选项：偏好设置
+Project link: [https://github.com/Deiloproxide/Fabits](https://github.com/Deiloproxide/Fabits)
 
-# 关于作者
-- ## 红石社 Deiloproxide
-![图片](https://github.com/Deiloproxide/Fabits/blob/main/Na.png?raw=true)
-- ## [官网传送门](https://nahida520.love)
-- ## [B站传送门](https://space.bilibili.com/500203556)
-- ## 邮箱：`246002083@nbu.edu.cn`
+[Detailed helps](HELP.md)
 
+[New update](NEW.md)
 ```cpp
 #include<stdio.h>
 int main(){
@@ -99,5 +74,5 @@ int main(){
     return 0;
 }
 ```
-
-![公式](https://latex.codecogs.com/svg.latex?\int&space;Nahida=N\frac{a^{2}}{2}hi+C)
+![form](https://latex.codecogs.com/svg.latex?\int&space;Nahida=N\frac{a^{2}}{2}hi+C)
+![avator](Img/Na.png)
