@@ -6,7 +6,7 @@
 
 Algorithm, file, batch toolbox application build by built-in Tkinter frame in Python, Integrated many functions
 
-![Todo App Screenshot](img/home.png)
+![Todo App Screenshot](Img/home.png)
 ## Feature
 - Modern Text Editor with multitabs, undo, redo and search
 - Two well-designed UI (day mode and Night mode)
