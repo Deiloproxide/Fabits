@@ -2,11 +2,11 @@
 ![Language](https://img.shields.io/badge/language-Python-brightgreen?style=for-the-badge)
 ![Frame](https://img.shields.io/badge/frame-tkinter-red?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-yellow?style=for-the-badge)
-[![GitHub release (latest by tag)](https://img.shields.io/github/v/tag/Deiloproxide/Fabits?style=for-the-badge&color=green&label=latest)](https://github.com/Deiloproxide/Fabits/releases)
+[![Latest](https://img.shields.io/github/v/tag/Deiloproxide/Fabits?style=for-the-badge&color=green&label=latest)](https://github.com/Deiloproxide/Fabits/releases)
 
-Algorithm, file, batch toolbox application build by built-in Tkinter frame in Python, Integrated many functions
+Algorithm, file, batch toolbox application build by built-in Tkinter frame in Python, Integrated many functions ([中文文档](/README_zh.md))
 
-![Todo App Screenshot](Img/Home.png)
+![Screenshot](Img/Home.png)
 ## Feature
 - Modern Text Editor with multitabs, undo, redo and search
 - Two well-designed UI (day mode and Night mode)
@@ -63,9 +63,9 @@ Deiloproxide - [@Deiloproxide](https://github.com/Deiloproxide)
 
 Project link: [https://github.com/Deiloproxide/Fabits](https://github.com/Deiloproxide/Fabits)
 
-[Detailed helps](HELP.md)
+Detailed helps [here](Help.md)
 
-[New update](NEW.md)
+New update [here](NEW.md)
 ```cpp
 #include<stdio.h>
 int main(){

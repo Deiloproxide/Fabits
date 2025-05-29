@@ -853,7 +853,7 @@ class Hlp:
         hlpemp[0].place(relx=ratio,rely=0,relwidth=1-ratio,relheight=1)
     def hlpshw(self,knd:str)->None:
         '''print help message'''
-        self.io.clear(self.hlptre); mdfls={'D':'HELP.md','N':'NEW.md'}
+        self.io.clear(self.hlptre); mdfls={'D':'Help.md','N':'NEW.md'}
         if knd in mdfls:
             try: fl=open(mdfls[knd],'r',encoding='utf-8')
             except: self.io.mb('e','o','错误',f'{mdfls[knd]}不存在'); return
