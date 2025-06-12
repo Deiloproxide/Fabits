@@ -7,13 +7,55 @@
 #..DDDD...EEEEE..IIIII..LLLLL...OOO...P......R...R...OOO...X...X..IIIII..DDDD...EEEEE..#
 #......................................................................................#
 ########################################################################################
-import chardet,ctypes,hashlib,math,multiprocessing,numpy,json,os,random
+import chardet,hashlib,math,multiprocessing,numpy,json,os,random
 import requests,subprocess,sys,threading,time,tkinter,turtle,webbrowser
 from PIL import Image; from tkinter import filedialog,messagebox,ttk,scrolledtext
-def avgs(nm:str)->numpy.floating:
-    try: return numpy.mean(numpy.array(Image.open(nm).convert('L')))
-    except: raise OSError(f'图片{nm}无法打开')
+def avgs(nm:str)->numpy.floating: return numpy.mean(numpy.array(Image.open(nm).convert('L')))
 multiprocessing.freeze_support()
+if os.name=='nt':
+    from ctypes import *
+    from ctypes import wintypes
+    windll.shcore.SetProcessDpiAwareness(1)
+    class Guid(Structure):
+        _fields_=[("Data1",c_ulong),("Data2",c_ushort),("Data3",c_ushort),("Data4",c_ubyte*8)]
+        def __init__(self,l,w1,w2,*b8)->None:
+            '''initialize guid'''
+            self.Data1,self.Data2,self.Data3=l,w1,w2
+            for i in range(8): self.Data4[i]=b8[i]
+    class Api:
+        '''windows com api'''
+        scfac=windll.shcore.GetScaleFactorForDevice(0)//5
+        def __init__(self,wmid:int)->None:
+            '''initialize com'''
+            self.ptr,self.hwnd=c_void_p(),windll.user32.GetParent(wmid)
+            clsid=Guid(0x56FDF344,0xFD6D,0x11d0,0x95,0x8A,0x00,0x60,0x97,0xC9,0xA0,0x90)
+            iid=Guid(0xEA1AFB91,0x9E28,0x4B86,0x90,0xE9,0x9E,0x9F,0x8A,0x5E,0xEF,0xAF)
+            windll.ole32.CoInitializeEx(None,2)
+            windll.ole32.CoCreateInstance(byref(clsid),None,1,byref(iid),byref(self.ptr))
+            vtable=cast(self.ptr,POINTER(c_void_p))[0]
+            vpar=lambda par: vtable+par*sizeof(c_void_p)
+            ptr=lambda *args: POINTER(WINFUNCTYPE(*args))
+            self.rel=cast(vpar(2),ptr(c_ulong,c_void_p))[0]
+            self.val=cast(vpar(9),ptr(HRESULT,c_void_p,wintypes.HWND,c_ulonglong,c_ulonglong))[0]
+            self.set=cast(vpar(10),ptr(HRESULT,c_void_p,wintypes.HWND,c_int))[0]
+            self.flash=lambda flg: windll.user32.FlashWindow(self.hwnd,flg)
+            self.state=lambda tbpf: self.set(self.ptr,self.hwnd,tbpf)
+            self.uninit=lambda: (self.rel(self.ptr),windll.ole32.CoUninitialize())
+            self.value=lambda now,tol: self.val(self.ptr,self.hwnd,now,tol)
+        def creblk(self,wmid:int=None)->None:
+            '''create black title bar'''
+            if wmid is None: hwnd=self.hwnd
+            else: hwnd=windll.user32.GetParent(wmid)
+            val=c_int(1); windll.dwmapi.DwmSetWindowAttribute(hwnd,20,byref(val),sizeof(val))
+else:
+    class Api:
+        '''deal same api on mac or linux'''
+        scfac=20
+        def __init__(self,wmid:int)->None:
+            '''deal same functions'''
+            self.flash=lambda flg: None; self.state=lambda tbpf: None
+            self.uninit=lambda: None; self.value=lambda now,tol: None
+        def creblk(self,wmid:int=None)->None: pass
 class Fabits:
     '''Fabits app main class shared data and io interface'''
     def __init__(self)->None:
@@ -23,26 +65,25 @@ class Fabits:
         self.admenu(); self.wm.mainloop()
     def adconf(self)->None:
         '''add main window widget and style'''
-        self.wmain=ttk.Frame(self.wm)
+        self.wmain=ttk.Frame(self.wm); csl=ttk.Frame(self.wmain)
+        self.cvs=tkinter.Canvas(self.wm,highlightthickness=0)
+        self.scrn=turtle.TurtleScreen(self.cvs); self.tul=turtle.RawTurtle(self.scrn)
         self.mnu=Navigation(self.wmain,bg=self.bgin,fg=self.fg,hl=self.bg)
-        main=ttk.Frame(self.wmain); self.cvs=tkinter.Canvas(self.wm)
-        self.scrn=turtle.TurtleScreen(self.cvs); csl=ttk.Frame(main)
-        self.tul=turtle.RawTurtle(self.scrn); self.note=NotebookPlus(main,self)
-        self.csl=self.cretre(csl); ratio=[0.15,0.75]
+        self.note=NotebookPlus(self.wmain,self); self.csl=self.cretre(csl)
+        self.clear(self.csl,1); ratio=[0.15,0.75]; self.pgbar.pgbar()
         self.mnu.place(relx=0,rely=0,relwidth=ratio[0],relheight=1)
-        main.place(relx=ratio[0],rely=0,relwidth=1-ratio[0],relheight=1)
-        self.note.place(relx=0,rely=0,relwidth=1,relheight=ratio[1])
-        csl.place(relx=0,rely=ratio[1],relwidth=1,relheight=1-ratio[1])
+        self.note.place(relx=ratio[0],rely=0,relwidth=1-ratio[0],relheight=ratio[1])
+        csl.place(relx=ratio[0],rely=ratio[1],relwidth=1-ratio[0],relheight=1-ratio[1])
     def adins(self)->None:
         '''add function example to call'''
         self.adend=Adend(self); self.calc=Calc(self); self.cdmix=Cdmix(self)
         self.clrplc=Clrplc(self); self.cmdmng=Cmdmng(self); self.cmpil=Cmpil(self)
         self.hlp=Hlp(self); self.icon=Icon(self); self.imgsrt=Imgsrt(self)
         self.iso=Iso(self); self.itmsth=Itmsth(self); self.lnksrt=Lnksrt(self)
-        self.mazen=Mazen(self); self.piccpt=Piccpt(self); self.precfg=Precfg(self)
-        self.pro=Pro(self); self.pul=Pul(self); self.rename=Rename(self)
-        self.ring=Ring(self); self.rome=Rome(self); self.txmng=Txmng(self)
-        self.update=Update(self)
+        self.mazen=Mazen(self); self.pgbar=Pgbar(self); self.piccpt=Piccpt(self)
+        self.precfg=Precfg(self); self.pro=Pro(self); self.pul=Pul(self)
+        self.rename=Rename(self); self.ring=Ring(self); self.rome=Rome(self)
+        self.txmng=Txmng(self); self.update=Update(self)
     def admenu(self)->None:
         '''add menu to main window'''
         mnus={
@@ -64,7 +105,7 @@ class Fabits:
             '圣遗物强化':self.itmsth.itmsth,'迷宫可视化':self.mazen.mazen,
             '抽卡概率计算':self.pro.pro,'抽卡模拟器':self.pul.pul,
             '批量重命名':self.rename.rename,'文本处理':self.txmng.txmng},
-        '设置(S)':{'清空控制台':lambda: self.clear(self.csl),'帮助':self.hlp.hlp,
+        '设置(S)':{'清空控制台':lambda: self.clear(self.csl,1),'帮助':self.hlp.hlp,
             '图标':self.icon.icon,'选项':self.precfg.precfg}}
         sz,fnt=600//self.scfac,lambda fsz: (self.fnt,self.size(fsz),'bold')
         for i in self.imgs:
@@ -99,6 +140,13 @@ class Fabits:
         '''open or save path for command manager'''
         tles=['打开','打开','保存']; pth=self.dlg(knd,tles[knd],('All files','*.*'))
         if pth: self.cmdvar.set(f'\"{pth}\"')
+    def clear(self,tag:ttk.Treeview,flg:int=0)->None:
+        '''clear treeview'''
+        tag.delete(*tag.get_children())
+        if flg:
+            self.show(tag,'purple',f"Fabits {self.data['curvsn']}")
+            self.show(tag,'purple',f'Based on Python {sys.version}')
+            self.show(tag,'purple','>>>')
     def cpy(self,tag:ttk.Treeview)->str:
         '''treeview copy'''
         scl=tag.selection()
@@ -106,23 +154,16 @@ class Fabits:
             val=tag.item(scl[0],'values'); self.wm.clipboard_clear()
             self.wm.clipboard_append(val)
         return 'break'
-    def creblk(self,tag:tkinter.Tk|tkinter.Toplevel)->None:
-        '''set window title dark mode'''
-        tag.update(); val=ctypes.c_int(2); ref,sz=ctypes.byref(val),ctypes.sizeof(val)
-        prt=ctypes.windll.user32.GetParent(tag.winfo_id())
-        ctypes.windll.dwmapi.DwmSetWindowAttribute(prt,20,ref,sz)
     def cretpl(self,tle:str,w:int,h:int,tag:str,num:int)->tuple[tkinter.Toplevel,list[ttk.Frame]]:
         '''create toplevel and frame'''
         tpl=tkinter.Toplevel(self.wm); tpl.withdraw(); tpl.geometry(self.calsz(w,h,tag))
         tpl.resizable(0,0); tpl.transient(self.wm); tpl.title(tle)
         tpl.protocol('WM_DELETE_WINDOW',lambda: self.wmqut(tpl,tag))
-        try:
-            if self.bgidx: self.creblk(tpl)
-        except: pass
+        if self.bgidx: tpl.update_idletasks(); self.Api.creblk(tpl.winfo_id())
         tpl.deiconify(); emps=[ttk.Frame(tpl) for i in range(num)]; return tpl,emps
     def cretre(self,tag:ttk.Frame)->ttk.Treeview:
         '''create treeview with a xview side scrollbar'''
-        slb=tkinter.Scrollbar(tag)
+        slb=tkinter.Scrollbar(tag,bg=self.bg)
         tre=ttk.Treeview(tag,columns=('opt',),show='tree',yscrollcommand=slb.set)
         slb.config(command=tre.yview); tre.column('#0',width=0,stretch=0)
         tre.column('opt',width=30*self.scfac,anchor='w')
@@ -139,18 +180,17 @@ class Fabits:
         return pth
     def funset(self)->None:
         '''initialize useful function'''
-        self.clear=lambda tag: tag.delete(*tag.get_children())
         self.clrtul=lambda: (self.tul.reset(),self.tul.ht(),self.tul.speed(0),self.tul.penup())
         self.fulnm=lambda pth,flnm: os.path.join(pth,flnm)
         self.scl=lambda tag: (tag.focus_set(),tag.selection_range(0,'end'))
-        self.title=lambda tle: self.wm.title(self.data['tle']+tle)
         self.show=lambda tag,clr,*args: tag.see(tag.insert('','end',values=args,tags=(clr,)))
         self.size=lambda x: round(x*self.scfac)
+        self.title=lambda tle: self.wm.title(self.data['tle']+tle)
         self.thr=lambda fun,*args: lambda: threading.Thread(target=fun,args=args).start()
-        self.thrpg=lambda tx,num: self.wm.after(0,self.pgini,tx,num)
-        self.thrqut=lambda: self.wm.after(1000,self.wmqut,self.pg,'pgini')
+        self.thrpg=lambda tx,num: self.wm.after(0,self.pgbar.pgini,tx,num)
+        self.thrqut=lambda: self.wm.after(1000,self.pgbar.pgqut)
         self.thrshw=lambda clr,*args: self.wm.after(0,self.show,self.csl,clr,*args)
-        self.thrupd=lambda num,tx,clr: self.wm.after(0,self.pgupd,num,tx,clr)
+        self.thrupd=lambda num,tx,clr: self.wm.after(0,self.pgbar.pgupd,num,tx,clr)
         self.web=lambda tag: webbrowser.open(self.data[tag])
     def getvar(self,var:tkinter.StringVar,tag:tkinter.Toplevel,arg:str,knd:type)->None:
         '''get value of entry string variable'''
@@ -180,23 +220,12 @@ class Fabits:
         emp=ttk.Frame(self.note); self.note.add(emp,name)
         emps=[ttk.Frame(emp) for i in range(num)]
         return emp,emps
-    def pgini(self,tle:str,tol:int)->None:
-        '''progress bar initialize'''
-        self.pg,pgemp=self.cretpl(tle,16,13,'pgini',3)
-        self.pglb=ttk.Label(pgemp[0],text='0.00%'); self.tol=tol/100
-        self.pgpgb=ttk.Progressbar(pgemp[1],length=15*self.scfac)
-        self.pgtre=self.cretre(pgemp[2]); self.pgpgb['maximum']=tol
-        self.pglb.pack(expand=1); self.pgpgb.pack(fill='y',expand=1)
-        for i in range(3): pgemp[i].pack(fill='both',expand=1)
-    def pgupd(self,num:int,tx:str,clr:str)->None:
-        '''update progress bar'''
-        self.pglb.config(text=f'{num/self.tol:.2f}%')
-        self.show(self.pgtre,clr,tx); self.pgpgb['value']=num
     def savcfg(self)->None:
         '''save configure after app closed'''
+        self.wmqut(self.pgbar.pg,'pgini')
         self.note.clsall(); self.wmqut(self.wm,'Fabits')
         fl=open('Json/Config.json','w',encoding='utf-8')
-        json.dump(self.cfg,fl,ensure_ascii=0,indent=4); fl.close()
+        json.dump(self.cfg,fl,ensure_ascii=0,indent=4); fl.close; self.Api.uninit()
         if self.reboot:
             now=sys.executable
             if sys.argv[0].endswith('.py'): subprocess.Popen([now,sys.argv[0]])
@@ -209,15 +238,13 @@ class Fabits:
         if self.bgidx: sty.theme_use('clam')
         sty.configure('.',background=self.bgin,fieldbackground=self.bg)
         sty.configure('.',foreground=self.fg,font=self.fnt)
-        sty.configure('Treeview',font=fnt,rowheight=self.scfac,background=self.bgin)
-        sty.map('TNotebook.Tab',background=[('selected',self.bg),('active',self.bgin)])
+        sty.configure('Treeview',font=fnt,rowheight=self.scfac,background=self.bg)
+        sty.layout('Treeview',[('Treeview.treearea',{'sticky':'nswe'})])
+        sty.layout('TNotebook',[('TNotebook.Tab',{'sticky':'nswe'})])
+        sty.map('TNotebook.Tab',background=[('selected',self.bg),('active',self.bg)])
     def wmini(self)->None:
         '''initialize data and program necessarity'''
-        try:
-            self.scfac=ctypes.windll.shcore.GetScaleFactorForDevice(0)//5
-            ctypes.windll.shcore.SetProcessDpiAwareness(1)
-        except: self.scfac=20
-        self.wm=tkinter.Tk(); self.wm.withdraw()
+        self.scfac=Api.scfac; self.wm=tkinter.Tk(); self.wm.withdraw()
         self.imgs={'Na':[None,None],'Fl':['文件(F)',None],'Al':['算法(A)',None],
                    'Ba':['批处理(B)',None],'In':['网络(I)',None],
                    'Tl':['工具(T)',None],'St':['设置(S)',None]}
@@ -275,13 +302,12 @@ class Fabits:
             self.fntknd+=f'{i} ' if self.cfg[i] else ''
         if not self.fntknd: self.fntknd='normal'
         if self.bgidx==2: lctime=time.localtime(); self.bgidx=0 if 6<=lctime.tm_hour<18 else 1
-        try:
-            if self.bgidx: self.creblk(self.wm)
-        except: pass
         self.bg=self.data['bg'][self.bgidx]; self.fg=self.data['fg'][self.bgidx]
-        self.bgin=self.data['bgin'][self.bgidx]; self.wm.geometry(self.calsz(64,36,'Fabits'))
-        self.wm.protocol('WM_DELETE_WINDOW',self.savcfg); self.wm.title(self.data['tle'])
-        self.wm.deiconify()
+        self.bgin=self.data['bgin'][self.bgidx]
+        self.wm.update_idletasks(); self.Api=Api(self.wm.winfo_id())
+        if self.bgidx: self.Api.creblk()
+        self.wm.geometry(self.calsz(64,36,'Fabits')); self.wm.title(self.data['tle'])
+        self.wm.protocol('WM_DELETE_WINDOW',self.savcfg); self.wm.deiconify()
 class Adend:
     '''add lack file end'''
     def __init__(self,io:Fabits)->None: self.io=io
@@ -730,7 +756,8 @@ class Cmdmng:
         self.cmdtre.column('cmd',width=12*self.io.scfac,anchor='w')
         cmdslb=tkinter.Scrollbar(cmdemp[0]); self.cmdtre.config(yscrollcommand=cmdslb.set)
         cmdslb.config(command=self.cmdtre.yview)
-        for i in self.io.data['clr']: self.cmdtre.tag_configure(i,foreground=i,background=self.io.bg)
+        for i in self.io.data['clr']:
+            self.cmdtre.tag_configure(i,foreground=i,background=self.io.bg)
         cmdslb.pack(side='right',fill='y'); self.cmdtre.pack(fill='both',expand=1)
         if 'commands' not in self.io.cfg: self.io.cfg['commands']={}
         self.cfg=self.io.cfg['commands']
@@ -839,6 +866,7 @@ class Hlp:
     def hlp(self)->None:
         '''construct window'''
         self.relnm='帮助'
+        if self.io.note.opened(self.relnm): return
         hlp,hlpemp=self.io.notemp(self.relnm,1); hlptx=self.io.data['hlp']
         hlpmnu={'帮助内容(I)':{hlptx[i]:lambda knd=i: self.hlpshw(knd) for i in hlptx},
                 '选项(O)':{'退出':lambda: self.io.note.fclose(self.io.note.now)}}
@@ -923,8 +951,7 @@ class Imgsrt:
         if self.lnm:
             lnmr,cnt=range(self.lnm),multiprocessing.cpu_count()
             res,pol=[[None,0,'',''] for i in lnmr],multiprocessing.Pool(processes=cnt)
-            self.io.thrpg('图片排序',self.lnm); self.picnt=0
-            calbk=lambda *args: self.imgupd()
+            self.io.thrpg('图片排序',self.lnm); self.picnt=0; calbk=lambda *args: self.imgupd()
             try:
                 for i in lnmr:
                     nm=self.io.fulnm(self.pth,names[i])
@@ -937,7 +964,7 @@ class Imgsrt:
             res=sorted(res,key=lambda i:i[1])
             self.io.thrshw('cyan','(3/3)整理')
             for i in lnmr:
-                res[i][3]=f'{i:04d}{getext(res[i][2])}'
+                res[i][3]=f'{i:04}{getext(res[i][2])}'
                 os.rename(self.io.fulnm(self.pth,res[i][2]),self.io.fulnm(self.pth,res[i][3]))
             for i in lnmr:
                 os.rename(self.io.fulnm(self.pth,res[i][3]),self.io.fulnm(self.pth,f'pic{res[i][3]}'))
@@ -1180,9 +1207,9 @@ class Mazen:
         self.mzbtn[0].config(state='normal')
 class Navigation(ttk.Frame):
     '''navigation menu widget'''
-    def __init__(self,parent:ttk.Frame,bg:str=None,fg:str=None,hl:str=None)->None:
+    def __init__(self,master:ttk.Frame,bg:str=None,fg:str=None,hl:str=None)->None:
         '''initialize navigation widget'''
-        super().__init__(parent); self.bg,self.fg,self.hl=bg,fg,hl
+        super().__init__(master); self.bg,self.fg,self.hl=bg,fg,hl
         self.state:dict[str:list[tkinter.PhotoImage,int]]={}
     def add_cascade(self,tx:str,ico=None,size=1,font=None,padx=0,pady=0)->None:
         '''add top menu'''
@@ -1228,9 +1255,9 @@ class Navigation(ttk.Frame):
         for i in tag.winfo_children(): self.rebind(i,event,fun)
 class NotebookPlus(ttk.Notebook):
     '''notebook widget with some function'''
-    def __init__(self,parent,io:Fabits)->None:
+    def __init__(self,master,io:Fabits)->None:
         '''construct window'''
-        self.io=io; super().__init__(parent)
+        self.io=io; super().__init__(master)
         self.now=self.cur=None; self.count,self.emp,self.card=1,'未命名文件',[]
         self.funset(); self.adarg()
         self.menu=tkinter.Menu(self,tearoff=0)
@@ -1245,6 +1272,7 @@ class NotebookPlus(ttk.Notebook):
             fl=sys.argv[1].strip('\"')
             if fl.endswith('.nda'): self.fnew(fl)
             else: self.fopen(fl)
+        else: self.fnew()
     def add(self,child,text:str)->None:
         '''open window'''
         self.now=len(self.card); self.card+=[[text,None,0,0,child]]
@@ -1324,6 +1352,7 @@ class NotebookPlus(ttk.Notebook):
         '''save file'''
         if not self.isfl(idx): return
         flnm=self.card[idx][1]
+        if self.card[idx][3]==0: return
         if force and not os.path.splitext(flnm)[1]: flnm+='.txt'
         elif self.card[idx][2] or copy:
             flnm=self.io.dlg(2,'保存',('All text files','*.*'))
@@ -1348,6 +1377,11 @@ class NotebookPlus(ttk.Notebook):
         if idx is None: return None
         if self.isfl(idx): return self.card[idx][1]
         else: return self.card[idx][0]
+    def isrt(self,tx:str)->None:
+        '''insert line'''
+        if not self.isfl(self.now): return
+        idx=self.card[self.now][4].index('insert')
+        self.card[self.now][4].insert(idx,tx); self.modify(self.now)
     def istx(self,flnm:str)->int:
         '''judge text file or binary file'''
         try: fl=open(flnm,'rb')
@@ -1441,6 +1475,28 @@ class NotebookPlus(ttk.Notebook):
         if self.isfl(self.now) and self.card[self.now][1]:
             try: self.card[self.now][4].edit_undo()
             except: self.io.wm.bell()
+class Pgbar:
+    '''progressbar window'''
+    def __init__(self,io:Fabits)->None: self.io=io
+    def pgini(self,tle:str,tol:int)->None:
+        self.pg.deiconify(); self.pg.title(tle)
+        self.pglb.config(text='0.00%')
+        self.pgpgb['maximum']=tol; self.tol=tol
+        self.pg.update_idletasks(); self.io.Api.state(2)
+    def pgbar(self)->None:
+        '''progress bar initialize'''
+        self.pg,pgemp=self.io.cretpl('',16,13,'pgini',3)
+        self.pg.withdraw(); self.pg.update_idletasks()
+        self.pglb=ttk.Label(pgemp[0],text=''); self.pgpgb=ttk.Progressbar(pgemp[1])
+        self.pgtre=self.io.cretre(pgemp[2]); self.pglb.pack(expand=1)
+        self.pgpgb.pack(fill='both',expand=1,padx=self.io.scfac//2,pady=self.io.scfac//4)
+        for i in range(3): pgemp[i].pack(fill='both',expand=1)
+        self.pgqut=lambda: (self.io.Api.state(0),self.pg.withdraw())
+    def pgupd(self,num:int,tx:str,clr:str)->None:
+        '''update progress bar'''
+        self.pglb.config(text=f'{100*num/self.tol:.2f}%')
+        self.io.show(self.pgtre,clr,tx); self.pgpgb['value']=num
+        self.io.Api.value(num,self.tol)
 class Piccpt:
     '''picture encrypt'''
     def __init__(self,io:Fabits)->None: self.io=io
@@ -1486,7 +1542,9 @@ class Precfg:
             self.io.reboot=1; self.io.savcfg()
     def precfg(self)->None:
         '''construct window'''
-        self.relnm='选项'; pre,preemp=self.io.notemp(self.relnm,9); self.cfg=self.io.cfg
+        self.relnm='选项'
+        if self.io.note.opened(self.relnm): return
+        pre,preemp=self.io.notemp(self.relnm,9); self.cfg=self.io.cfg
         pretx=['UI显示模式','字体']; preoptx=[self.io.data['modes'],self.io.data['fonts']]
         optshw=[preoptx[0][self.cfg['bgidx']],self.cfg['font']]
         prebtx=['粗体','斜体','下划线','删除线']
@@ -1814,9 +1872,9 @@ class Rome:
         self.io.thrshw('purple','>>>')
 class Toggle(tkinter.Canvas):
     '''modern widget with dynamic animation'''
-    def __init__(self,parent,wth:float,hgt:float,bg:str,var:tkinter.BooleanVar,cmd=None)->None:
+    def __init__(self,master,wth:float,hgt:float,bg:str,var:tkinter.BooleanVar,cmd=None)->None:
         '''initialize toggle widget'''
-        super().__init__(parent,width=wth+1,height=hgt,bg=bg,highlightthickness=0)
+        super().__init__(master,width=wth+1,height=hgt,bg=bg,highlightthickness=0)
         self.wth,self.hgt,self.rad=wth,hgt,0.4*hgt
         self.sc,self.on,self.off='#ffffff','#4CAF50','#848484'
         self.var,self.cmd,self.items=var,cmd,[None]*4
