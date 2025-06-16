@@ -7,23 +7,26 @@
 #..DDDD...EEEEE..IIIII..LLLLL...OOO...P......R...R...OOO...X...X..IIIII..DDDD...EEEEE..#
 #......................................................................................#
 ########################################################################################
-import chardet,hashlib,math,multiprocessing,numpy,json,os,random
-import requests,subprocess,sys,threading,time,tkinter,turtle,webbrowser
-from PIL import Image; from tkinter import filedialog,messagebox,ttk,scrolledtext
-def avgs(nm:str)->numpy.floating: return numpy.mean(numpy.array(Image.open(nm).convert('L')))
-multiprocessing.freeze_support()
+import hashlib,math,multiprocessing,json,os,random
+import subprocess,sys,threading,time,tkinter,turtle,webbrowser
+from numpy import array,bitwise_xor,mean,ones,zeros
+from PIL.Image import fromarray,open as iopen
+from tkinter import filedialog,messagebox,ttk,scrolledtext
+from urllib.request import urlopen
+def avgs(nm:str): return mean(array(iopen(nm).convert('L')))
 if os.name=='nt':
     from ctypes import *
     from ctypes import wintypes
-    windll.shcore.SetProcessDpiAwareness(1)
     class Guid(Structure):
-        _fields_=[("Data1",c_ulong),("Data2",c_ushort),("Data3",c_ushort),("Data4",c_ubyte*8)]
+        _fields_=[("Data1",c_ulong),("Data2",c_ushort),
+                  ("Data3",c_ushort),("Data4",c_ubyte*8)]
         def __init__(self,l,w1,w2,*b8)->None:
             '''initialize guid'''
             self.Data1,self.Data2,self.Data3=l,w1,w2
             for i in range(8): self.Data4[i]=b8[i]
     class Api:
         '''windows com api'''
+        dpi=lambda: windll.shcore.SetProcessDpiAwareness(1)
         scfac=windll.shcore.GetScaleFactorForDevice(0)//5
         def __init__(self,wmid:int)->None:
             '''initialize com'''
@@ -50,6 +53,7 @@ if os.name=='nt':
 else:
     class Api:
         '''deal same api on mac or linux'''
+        dpi=lambda: None
         scfac=20
         def __init__(self,wmid:int)->None:
             '''deal same functions'''
@@ -171,6 +175,13 @@ class Fabits:
         tre.bind('<Control-c>',lambda *args: self.cpy(tre))
         slb.pack(side='right',fill='y'); tre.pack(fill='both',expand=1)
         return tre
+    @staticmethod
+    def decode(byt:bytes)->str:
+        encs=['utf-8','gbk','gb2312','gb18030','latin1','iso-8859-1']
+        for i in encs:
+            try: res=byt.decode(i,errors='strict'); return res
+            except UnicodeDecodeError: continue
+        return ''
     @staticmethod
     def dlg(knd:int,tl:str,*args)->str:
         '''open and save file or directory path'''
@@ -640,9 +651,7 @@ class Cdmix:
             fcpy=open(self.fls[2],'w',encoding='utf-8')
         except: return
         pyb,cppb=fpy.read(),fcpp.read(); fpy.close(); fcpp.close()
-        encpy=chardet.detect(pyb)['encoding'] or 'utf-8'
-        encpp=chardet.detect(cppb)['encoding'] or 'utf-8'
-        py,cpp=pyb.decode(encpy).splitlines(),cppb.decode(encpp).splitlines()
+        py,cpp=self.io.decode(pyb).splitlines(),self.io.decode(cppb).splitlines()
         fcpy.write('#if 0\n')
         for i in py: fcpy.write(i+'\n')
         fcpy.write('\n\'\'\'\n#else\n')
@@ -688,10 +697,10 @@ class Clrplc:
         self.io.thr(self.clrpld)()
     def clrpld(self)->None:
         '''image replace color'''
-        self.io.thrshw('cyan','(2/4)转换'); pic=Image.open(self.flnm)
-        self.io.thrshw('cyan','(3/4)替换'); piarr=numpy.array(pic)
+        self.io.thrshw('cyan','(2/4)转换'); pic=iopen(self.flnm)
+        self.io.thrshw('cyan','(3/4)替换'); piarr=array(pic)
         for i in self.clrs: alc=(piarr[:,:,:3]==i).all(axis=-1); piarr[alc,:3]=self.clr
-        self.io.thrshw('cyan','(4/4)保存'); pic=Image.fromarray(piarr)
+        self.io.thrshw('cyan','(4/4)保存'); pic=fromarray(piarr)
         flnew=self.io.dlg(2,'保存',('Image files','*.png'))
         if not flnew: return
         if not flnew.endswith('.png'): flnew+='.png'
@@ -813,12 +822,8 @@ class Cmpil:
         if ext=='.c': gcc='gcc'
         elif ext=='.cpp': gcc='g++'
         else: self.io.mb('w','o','提示','请检查输入的内容'); return
-        try: fl=open(pth,'rb')
-        except: return
-        datas=fl.read(); fl.close(); enc=chardet.detect(datas)['encoding'] or 'utf-8'
-        enc=f'-finput-charset={enc} -fexec-charset={enc}'
-        if self.cmpknd.get(): cmd=f'{gcc} {enc} -o \"{flnm}.exe\" \"{pth}\" {args}'
-        else: cmd=f'{gcc} {enc} -shared -o \"{flnm}.dll\" \"{pth}\" {args}'
+        cmd=f'{gcc} \"{pth}\" -o \"{flnm}\" {args}'
+        if not self.cmpknd.get(): cmd+=' -shared'
         self.io.wm.after(0,self.cmpprt,cmd,'green')
         if pre: return
         self.cmpout(cmd)
@@ -990,7 +995,7 @@ class Iso:
         self.io.thr(self.isocal)()
     def isocal(self)->None:
         '''begin calculate'''
-        isonum,liso=numpy.zeros(self.num+1,dtype=int),1; isonum[0]=1
+        isonum,liso=zeros(self.num+1,dtype=int),1; isonum[0]=1
         for i in range(self.num):
             isob,isoc,isotmp=0,0,0; isoa=i-2*isoc
             while isoc<=isoa:
@@ -1141,13 +1146,13 @@ class Mazen:
         '''gen maze for visual maze'''
         self.hgt,self.wth,self.bgx,self.bgy,self.edx,self.edy=args
         self.sz=min(12*self.io.scfac/self.hgt,12*self.io.scfac/self.wth)
-        self.maze=numpy.ones(shape=(self.hgt*2+1,self.wth*2+1),dtype=int)
+        self.maze=ones(shape=(self.hgt*2+1,self.wth*2+1),dtype=int)
         for i in range(self.hgt*2+1):
             for j in range(self.wth*2+1):
                 if i in [0,self.hgt*2] or j in [0,self.wth*2]: self.maze[i,j]=0
         self.mzshw(0,0,self.hgt*2+1,self.wth*2+1,self.io.fg)
         self.mzshw(1,1,self.hgt*2,self.wth*2,self.io.bg)
-        stk,top=numpy.zeros(shape=(self.hgt*self.wth,4),dtype=int),0
+        stk,top=zeros(shape=(self.hgt*self.wth,4),dtype=int),0
         stk[top]=[1,1,self.hgt*2-1,self.wth*2-1]; top+=1
         while top>0:
             top-=1; ltx,lty,rtx,rty=stk[top]
@@ -1186,7 +1191,7 @@ class Mazen:
         self.mzbtn[0].config(state='disabled')
         self.mzbtn[1].config(state='disabled')
         dires=[[1,0],[-1,0],[0,1],[0,-1]]
-        stk,top=numpy.zeros(shape=(self.hgt*self.wth,3),dtype=int),0
+        stk,top=zeros(shape=(self.hgt*self.wth,3),dtype=int),0
         f=lambda j: dires[dire][j]+(dires[dire][j]<0)
         g=lambda j: dires[dire][j]*2+1-(dires[dire][j]<0)
         stk[top]=[self.bgx*2-1,self.bgy*2-1,0]; flg=0
@@ -1337,8 +1342,7 @@ class NotebookPlus(ttk.Notebook):
         if not flnm: flnm=self.io.dlg(1,'打开',('All text files','*.*'))
         if self.istx(flnm) or self.opened(flnm): return
         fl=open(flnm,'rb'); datas=fl.read(); fl.close()
-        enc=chardet.detect(datas)['encoding'] or 'utf-8'
-        dataln=datas.decode(enc,errors='backslashreplace').splitlines()
+        dataln=self.io.decode(datas).splitlines()
         text=scrolledtext.ScrolledText(self,undo=1); ldt=len(dataln)
         text.config(bg=self.io.bg,fg=self.io.fg)
         text.config(font=(self.io.fnt,self.io.size(0.4),self.io.fntknd))
@@ -1491,7 +1495,7 @@ class Pgbar:
         self.pgtre=self.io.cretre(pgemp[2]); self.pglb.pack(expand=1)
         self.pgpgb.pack(fill='both',expand=1,padx=self.io.scfac//2,pady=self.io.scfac//4)
         for i in range(3): pgemp[i].pack(fill='both',expand=1)
-        self.pgqut=lambda: (self.io.Api.state(0),self.pg.withdraw())
+        self.pgqut=lambda: (self.io.Api.state(0),self.pg.withdraw(),self.io.clear(self.pgtre))
     def pgupd(self,num:int,tx:str,clr:str)->None:
         '''update progress bar'''
         self.pglb.config(text=f'{100*num/self.tol:.2f}%')
@@ -1507,17 +1511,17 @@ class Piccpt:
         self.io.thr(self.pichsh)()
     def pichsh(self)->None:
         '''hash encrypt'''
-        try: pic=Image.open(self.flnm)
+        try: pic=iopen(self.flnm)
         except: return
-        piarr,hgt,wth=numpy.array(pic),pic.height,pic.width
+        piarr,hgt,wth=array(pic),pic.height,pic.width
         self.io.thrshw('cyan','(2/3)加密')
         lclr=len(piarr[0,0]); hsh=self.io.hshgen()
-        imgmsk=numpy.zeros_like(piarr); self.io.thrpg('图片加密',hgt)
+        imgmsk=zeros_like(piarr); self.io.thrpg('图片加密',hgt)
         for i in range(hgt):
             for j in range(wth):
                 for k in range(lclr): imgmsk[i,j,k]=next(hsh)
             if i%2: self.io.thrupd(i+1,f'已加密{i+1}/{hgt}','cyan')
-        pic=Image.fromarray(numpy.bitwise_xor(piarr,imgmsk))
+        pic=fromarray(bitwise_xor(piarr,imgmsk))
         self.io.thrqut()
         self.io.thrshw('cyan','(3/3)保存')
         new=self.io.dlg(2,'保存',('Image files','*.png'))
@@ -1575,8 +1579,8 @@ class Precfg:
 class Pro:
     '''pull for probility tool for Genshin Impact'''
     def __init__(self,io:Fabits)->None:
-        self.io=io; self.protmp=numpy.zeros(shape=(52,91,5,2))
-        self.pullst=numpy.zeros(shape=(38000,4),dtype=int); self.prolst=numpy.zeros(38000)
+        self.io=io; self.protmp=zeros(shape=(52,91,5,2))
+        self.pullst=zeros(shape=(38000,4),dtype=int); self.prolst=zeros(38000)
     def pro(self)->None:
         '''construct window'''
         self.relnm='抽卡概率计算'
@@ -1597,7 +1601,7 @@ class Pro:
         proemp[5].pack(fill='x',side='bottom',pady=self.io.scfac/3)
     def procal(self,args:list[int])->None:
         '''calculate pull for probility'''
-        respro=numpy.zeros(52,dtype=float)
+        respro=zeros(52,dtype=float)
         stn,pbl,puts,fu,tu=args; self.procfm.config(state='disabled')
         lpro,st,ed=0,0,50; pbl+=stn//160; self.pullst[lpro]=[0,puts,fu,tu]
         self.prolst[lpro]=1; lpro+=1; self.io.thrpg('抽卡模拟',pbl)
@@ -1874,8 +1878,8 @@ class Toggle(tkinter.Canvas):
     '''modern widget with dynamic animation'''
     def __init__(self,master,wth:float,hgt:float,bg:str,var:tkinter.BooleanVar,cmd=None)->None:
         '''initialize toggle widget'''
-        super().__init__(master,width=wth+1,height=hgt,bg=bg,highlightthickness=0)
-        self.wth,self.hgt,self.rad=wth,hgt,0.4*hgt
+        super().__init__(master,width=wth+1,height=hgt+1,bg=bg,highlightthickness=0)
+        self.wth,self.hgt,self.rad=wth,hgt,0.375*hgt
         self.sc,self.on,self.off='#ffffff','#4CAF50','#848484'
         self.var,self.cmd,self.items=var,cmd,[None]*4
         self.onani,self.state,self.fx=0,self.var.get(),lambda x: (x-1)**3+1
@@ -1897,7 +1901,7 @@ class Toggle(tkinter.Canvas):
         self.items[1]=self.create_arc(par,0,self.wth,self.hgt,start=270,
                                       extent=180,fill=bg,outline='')
         self.items[2]=self.create_rectangle(self.hgt/2,0,self.wth-self.hgt/2,
-                                            self.hgt,fill=bg,outline='')
+                                            self.hgt+1,fill=bg,outline='')
         if state: self.items[3]=self.create_oval(scx+par,scx,scy+par,scy,fill=self.sc,outline='')
         else: self.items[3]=self.create_oval(scx,scx,scy,scy,fill=self.sc,outline='')
     def toggle(self,*args)->None:
@@ -1990,8 +1994,7 @@ class Txmng:
         if self.txvars[0].get():
             try: fl=open(tx,'rb')
             except: return
-            datas=fl.read(); fl.close()
-            enc=chardet.detect(datas)['encoding'] or 'utf-8'; tx=datas.decode(enc)
+            datas=fl.read(); fl.close(); tx=self.io.decode(datas)
         else: enc='utf-8'
         res=funs[funknd](tx)
         if self.txvars[1].get():
@@ -2022,12 +2025,12 @@ class Update:
     def updchk(self)->None:
         '''send request'''
         try:
-            resp=requests.get(self.io.data['latest'])
-            datas=resp.json(); latvsn=datas['tag_name']
+            resp=urlopen(self.io.data['latest'],timeout=30)
+            latvsn=json.loads(self.io.decode(resp.read()))['tag_name']
             if latvsn==self.io.data['curvsn']:
                 self.io.mb('i','o','提示','当前已经是最新版本')
             elif self.io.mb('i','yn','提示','有新版本!是否前往项目仓库下载?')=='yes':
                 webbrowser.open(self.io.data['proj']+'/releases/latest')
         except:
             if self.io.mb('w','yn','无法连接服务器','是否重试?')=='yes': self.update()
-if __name__=='__main__': Fabits()
+if __name__=='__main__': multiprocessing.freeze_support(); Api.dpi(); Fabits()
