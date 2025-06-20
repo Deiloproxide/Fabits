@@ -1,25 +1,30 @@
 {
-    "commands": {
+    "cmds": {
         "编译dll(MinGW64)": "g++ -shared -o {file.dll} {file.cpp} {args}",
         "编译exe(MinGW64)": "g++ -o {file.exe} {file.cpp} {args}",
         "运行py": "python {file.py} {args}",
         "pip安装库": "pip install {pkg}",
         "Cython编译": "python {file.py} build_ext --inplace"
     },
+    "font": "Consolas",
+    "knds": [
+        0,
+        0,
+        0,
+        0
+    ],
+    "ani": 0,
+    "bgidx": 0,
+    "style": "vista",
+    "Fabits": "1920x1080+375+225",
     "sc": [
         30,
         2560,
         1600
     ],
-    "bgidx": 1,
-    "font": "Consolas",
-    "bold": 0,
-    "italic": 0,
-    "underline": 0,
-    "overstrike": 0,
-    "ani": 0,
-    "Fabits": "1920x1080+307+270",
-    "pgini": "480x390+1040+605",
+    "cinarg": "540x180+1010+710",
+    "pgbar": "480x390+1040+605",
     "mzgd": "600x240+980+680",
+    "schgd": "540x210+1010+695",
     "wminp": "540x150+1010+725"
 }

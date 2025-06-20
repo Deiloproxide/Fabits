@@ -1,15 +1,15 @@
-########################################################################################
-#......................................................................................#
-#..DDDD...EEEEE..IIIII..L.......OOO...PPPP...RRRR....OOO...X...X..IIIII..DDDD...EEEEE..#
-#..D...D..E........I....L......O...O..P...P..R...R..O...O...X.X.....I....D...D..E......#
-#..D...D..EEEEE....I....L......O...O..PPPP...RRRR...O...O....X......I....D...D..EEEEE..#
-#..D...D..E........I....L......O...O..P......R...R..O...O...X.X.....I....D...D..E......#
-#..DDDD...EEEEE..IIIII..LLLLL...OOO...P......R...R...OOO...X...X..IIIII..DDDD...EEEEE..#
-#......................................................................................#
-########################################################################################
+'''
+......................................................................................
+..DDDD...EEEEE..IIIII..L.......OOO...PPPP...RRRR....OOO...X...X..IIIII..DDDD...EEEEE..
+..D...D..E........I....L......O...O..P...P..R...R..O...O...X.X.....I....D...D..E......
+..D...D..EEEEE....I....L......O...O..PPPP...RRRR...O...O....X......I....D...D..EEEEE..
+..D...D..E........I....L......O...O..P......R...R..O...O...X.X.....I....D...D..E......
+..DDDD...EEEEE..IIIII..LLLLL...OOO...P......R...R...OOO...X...X..IIIII..DDDD...EEEEE..
+......................................................................................
+'''
 import hashlib,math,multiprocessing,json,os,random
 import subprocess,sys,threading,time,tkinter,turtle,webbrowser
-from numpy import array,bitwise_xor,mean,ones,zeros
+from numpy import array,bitwise_xor,mean,ones,uint8,zeros,zeros_like
 from PIL.Image import fromarray,open as iopen
 from tkinter import filedialog,messagebox,ttk,scrolledtext
 from urllib.request import urlopen
@@ -17,6 +17,7 @@ def avgs(nm:str): return mean(array(iopen(nm).convert('L')))
 if os.name=='nt':
     from ctypes import *
     from ctypes import wintypes
+    style=['vista','winnative','xpnative']
     class Guid(Structure):
         _fields_=[("Data1",c_ulong),("Data2",c_ushort),
                   ("Data3",c_ushort),("Data4",c_ubyte*8)]
@@ -38,48 +39,52 @@ if os.name=='nt':
             vtable=cast(self.ptr,POINTER(c_void_p))[0]
             vpar=lambda par: vtable+par*sizeof(c_void_p)
             ptr=lambda *args: POINTER(WINFUNCTYPE(*args))
-            self.rel=cast(vpar(2),ptr(c_ulong,c_void_p))[0]
-            self.val=cast(vpar(9),ptr(HRESULT,c_void_p,wintypes.HWND,c_ulonglong,c_ulonglong))[0]
-            self.set=cast(vpar(10),ptr(HRESULT,c_void_p,wintypes.HWND,c_int))[0]
-            self.flash=lambda flg: windll.user32.FlashWindow(self.hwnd,flg)
-            self.state=lambda tbpf: self.set(self.ptr,self.hwnd,tbpf)
-            self.uninit=lambda: (self.rel(self.ptr),windll.ole32.CoUninitialize())
-            self.value=lambda now,tol: self.val(self.ptr,self.hwnd,now,tol)
-        def creblk(self,wmid:int=None)->None:
+            rel=cast(vpar(2),ptr(c_ulong,c_void_p))[0]
+            val=cast(vpar(9),ptr(HRESULT,c_void_p,wintypes.HWND,c_ulonglong,c_ulonglong))[0]
+            chg=cast(vpar(10),ptr(HRESULT,c_void_p,wintypes.HWND,c_int))[0]
+            self.state=lambda tbpf: chg(self.ptr,self.hwnd,tbpf)
+            self.uninit=lambda: (rel(self.ptr),windll.ole32.CoUninitialize())
+            self.value=lambda now,tol: val(self.ptr,self.hwnd,now,tol)
+        @staticmethod
+        def creblk(bgidx:int,wmid:int)->None:
             '''create black title bar'''
-            if wmid is None: hwnd=self.hwnd
-            else: hwnd=windll.user32.GetParent(wmid)
-            val=c_int(1); windll.dwmapi.DwmSetWindowAttribute(hwnd,20,byref(val),sizeof(val))
+            hwnd=windll.user32.GetParent(wmid); val=c_int(bgidx)
+            windll.dwmapi.DwmSetWindowAttribute(hwnd,20,byref(val),sizeof(val))
 else:
+    style=['aqua'] if sys.platform=='darwin' else []
     class Api:
         '''deal same api on mac or linux'''
-        dpi=lambda: None
-        scfac=20
+        dpi=lambda *args: None; scfac=20
         def __init__(self,wmid:int)->None:
             '''deal same functions'''
-            self.flash=lambda flg: None; self.state=lambda tbpf: None
-            self.uninit=lambda: None; self.value=lambda now,tol: None
-        def creblk(self,wmid:int=None)->None: pass
+            self.flash=self.state=self.uninit=self.value=lambda *args: None
+        @staticmethod
+        def creblk(bgidx:int,wmid:int)->None: pass
 class Fabits:
     '''Fabits app main class shared data and io interface'''
     def __init__(self)->None:
         '''initialize app'''
-        self.wmini(); self.adins(); self.wmset(); self.funset()
-        self.adconf(); self.style(); self.icon.icon(self.cfg.get('ani',1))
-        self.admenu(); self.wm.mainloop()
+        self.wmini(); self.stlchk(); self.adins(); self.funset()
+        self.adconf(); self.style(); self.admenu()
     def adconf(self)->None:
         '''add main window widget and style'''
-        self.wmain=ttk.Frame(self.wm); csl=ttk.Frame(self.wmain)
-        self.cvs=tkinter.Canvas(self.wm,highlightthickness=0)
-        self.scrn=turtle.TurtleScreen(self.cvs); self.tul=turtle.RawTurtle(self.scrn)
-        self.mnu=Navigation(self.wmain,bg=self.bgin,fg=self.fg,hl=self.bg)
-        self.note=NotebookPlus(self.wmain,self); self.csl=self.cretre(csl)
-        self.clear(self.csl,1); ratio=[0.15,0.75]; self.pgbar.pgbar()
+        self.wm.update_idletasks(); self.Api=Api(self.wm.winfo_id())
+        self.sc=[self.scfac,self.wm.winfo_screenwidth(),self.wm.winfo_screenheight()]
+        self.check=(self.cfg['sc']==self.sc); self.wm.geometry(self.calsz(64,36,'Fabits'))
+        self.wm.title(self.data['tle']); self.wm.protocol('WM_DELETE_WINDOW',self.savcfg)
+        self.wmain=ttk.Frame(self.wm); self.mnu=Navigation(self.wmain,self)
+        self.wm.bind('<<style>>',self.mnu.bgs,'+')
+        self.note=NotebookPlus(self.wmain,self); csl=ttk.Frame(self.wmain)
+        self.csl=self.cretre(csl); self.clear(self.csl,1); ratio=[0.15,0.75]
         self.mnu.place(relx=0,rely=0,relwidth=ratio[0],relheight=1)
         self.note.place(relx=ratio[0],rely=0,relwidth=1-ratio[0],relheight=ratio[1])
         csl.place(relx=ratio[0],rely=ratio[1],relwidth=1-ratio[0],relheight=1-ratio[1])
+        self.cvs=tkinter.Canvas(self.wm,highlightthickness=0)
+        self.scrn=turtle.TurtleScreen(self.cvs)
+        self.wm.bind('<<style>>',lambda *args: self.scrn.bgcolor(self.bg),'+')
+        self.tul=turtle.RawTurtle(self.scrn)
     def adins(self)->None:
-        '''add function example to call'''
+        '''add class instance'''
         self.adend=Adend(self); self.calc=Calc(self); self.cdmix=Cdmix(self)
         self.clrplc=Clrplc(self); self.cmdmng=Cmdmng(self); self.cmpil=Cmpil(self)
         self.hlp=Hlp(self); self.icon=Icon(self); self.imgsrt=Imgsrt(self)
@@ -102,8 +107,7 @@ class Fabits:
             '最大环长度':self.ring.ring,'求解罗马数字':self.rome.rome},
         '批处理(B)':{'缺失后缀修复':self.adend.adend,'图片颜色替换':self.clrplc.clrplc,
             '图片排序':self.imgsrt.imgsrt,'图片加解密':self.piccpt.piccpt},
-        '网络(I)':{'项目仓库':lambda: self.web('proj'),'官网':lambda: self.web('web'),
-            '检查更新':self.update.update},
+        '网络(I)':{'项目仓库':lambda: self.web('proj'),'检查更新':self.update.update},
         '工具(T)':{'计算器':self.calc.calc,'代码混合器':self.cdmix.cdmix,
             '命令管理器':self.cmdmng.cmdmng,'编译链接库':self.cmpil.cmpil,
             '圣遗物强化':self.itmsth.itmsth,'迷宫可视化':self.mazen.mazen,
@@ -111,39 +115,42 @@ class Fabits:
             '批量重命名':self.rename.rename,'文本处理':self.txmng.txmng},
         '设置(S)':{'清空控制台':lambda: self.clear(self.csl,1),'帮助':self.hlp.hlp,
             '图标':self.icon.icon,'选项':self.precfg.precfg}}
-        sz,fnt=600//self.scfac,lambda fsz: (self.fnt,self.size(fsz),'bold')
+        sz=600//self.scfac
         for i in self.imgs:
-            mnulb=self.imgs[i][0]
-            if mnulb is not None:
-                self.mnu.add_cascade(mnulb,self.imgs[i][1],sz,fnt(0.4),self.scfac/2,self.scfac/2)
-                for j in mnus[mnulb]:
-                    self.mnu.add_command(j,fnt(0.32),mnus[mnulb][j],2.5*self.scfac,self.scfac/6)
+            mnu=self.imgs[i][0]
+            if mnu is not None:
+                self.mnu.add_cascade(mnu,0.4,self.imgs[i][1],sz,self.scfac/2,self.scfac/2)
+                for j in mnus[mnu]:
+                    self.mnu.add_command(j,0.32,mnus[mnu][j],2.5*self.scfac,self.scfac/6)
     def calsz(self,w:int,h:int,key:str)->str:
         '''read last window info or make window center'''
         size=self.cfg.get(key,'')
         if size and self.check: return size
-        a,b=w*self.scfac,h*self.scfac; c,d=(self.scwth-a)//2,(self.schgt-b)//2
-        return f'{a}x{b}+{c}+{d}'
+        wth,hgt=w*self.scfac,h*self.scfac
+        posx,posy=(self.sc[1]-wth)//2,(self.sc[2]-hgt)//2
+        return f'{wth}x{hgt}+{posx}+{posy}'
     def cinarg(self,tx:str)->str|None:
         '''input argument for command manager'''
-        cin,cinemp=self.cretpl('命令参数',18,6,'cinarg',4)
+        if 'cinarg' in self.tpls: return None
+        cin,cinemp=self.cretpl('命令参数',18,6,'cinarg',4); self.val=None
         cinbtx=['文件夹打开','文件打开','文件保存','确认','跳过','取消']
-        cinlb=ttk.Label(cinemp[0],text=tx); self.cmdvar=tkinter.StringVar()
-        cinet=ttk.Entry(cinemp[1],width=40,textvariable=self.cmdvar)
+        cinlb=ttk.Label(cinemp[0],text=tx); self.cinvar=tkinter.StringVar()
+        cinet=ttk.Entry(cinemp[1],width=40,textvariable=self.cinvar)
+        cinlb.pack(expand=1); cinet.pack(expand=1)
         cincmd=[lambda: self.cinpth(0),lambda: self.cinpth(1),lambda: self.cinpth(2),
-                lambda: self.getvar(self.cmdvar,cin,'cmdinp',str),
-                lambda: self.inperr(cin,'cmdinp',''),lambda: self.inperr(cin,'cinarg')]
+                lambda: self.getvar(self.cinvar,cin,'cinarg',str),
+                lambda: self.cinpas(cin),lambda: self.wmqut(cin,'cinarg')]
         for i in range(6):
             cinbtn=ttk.Button(cinemp[2+i//3],text=cinbtx[i],command=cincmd[i])
             cinbtn.pack(side='left',expand=1)
-        cinlb.pack(expand=1); cinet.pack(expand=1)
         for i in range(4): cinemp[i].pack(fill='both',expand=1)
-        cin.protocol('WM_DELETE_WINDOW',lambda: self.inperr(cin,'cmdinp'))
+        cin.protocol('WM_DELETE_WINDOW',lambda: self.wmqut(cin,'cinarg'))
         cin.wait_window(); return self.val
+    def cinpas(self,tag:tkinter.Toplevel)->None: self.val=''; self.wmqut(tag,'cinarg')
     def cinpth(self,knd:int)->None:
         '''open or save path for command manager'''
         tles=['打开','打开','保存']; pth=self.dlg(knd,tles[knd],('All files','*.*'))
-        if pth: self.cmdvar.set(f'\"{pth}\"')
+        if pth: self.cinvar.set(f'\"{pth}\"')
     def clear(self,tag:ttk.Treeview,flg:int=0)->None:
         '''clear treeview'''
         tag.delete(*tag.get_children())
@@ -158,20 +165,20 @@ class Fabits:
             val=tag.item(scl[0],'values'); self.wm.clipboard_clear()
             self.wm.clipboard_append(val)
         return 'break'
-    def cretpl(self,tle:str,w:int,h:int,tag:str,num:int)->tuple[tkinter.Toplevel,list[ttk.Frame]]:
+    def cretpl(self,tle:str,wth:int,hgt:int,tag:str,num:int)->tuple:
         '''create toplevel and frame'''
-        tpl=tkinter.Toplevel(self.wm); tpl.withdraw(); tpl.geometry(self.calsz(w,h,tag))
+        tpl=tkinter.Toplevel(self.wm); self.tpls[tag]=tpl
+        tpl.withdraw(); tpl.geometry(self.calsz(wth,hgt,tag))
         tpl.resizable(0,0); tpl.transient(self.wm); tpl.title(tle)
         tpl.protocol('WM_DELETE_WINDOW',lambda: self.wmqut(tpl,tag))
-        if self.bgidx: tpl.update_idletasks(); self.Api.creblk(tpl.winfo_id())
+        tpl.update_idletasks(); self.Api.creblk(self.bgidx,tpl.winfo_id())
         tpl.deiconify(); emps=[ttk.Frame(tpl) for i in range(num)]; return tpl,emps
     def cretre(self,tag:ttk.Frame)->ttk.Treeview:
         '''create treeview with a xview side scrollbar'''
-        slb=tkinter.Scrollbar(tag,bg=self.bg)
+        slb=tkinter.Scrollbar(tag)
         tre=ttk.Treeview(tag,columns=('opt',),show='tree',yscrollcommand=slb.set)
         slb.config(command=tre.yview); tre.column('#0',width=0,stretch=0)
-        tre.column('opt',width=30*self.scfac,anchor='w')
-        for i in self.data['clr']: tre.tag_configure(i,foreground=i,background=self.bg)
+        for i in self.data['clr']: tre.tag_configure(i,foreground=i)
         tre.bind('<Control-c>',lambda *args: self.cpy(tre))
         slb.pack(side='right',fill='y'); tre.pack(fill='both',expand=1)
         return tre
@@ -179,7 +186,7 @@ class Fabits:
     def decode(byt:bytes)->str:
         encs=['utf-8','gbk','gb2312','gb18030','latin1','iso-8859-1']
         for i in encs:
-            try: res=byt.decode(i,errors='strict'); return res
+            try: res=byt.decode(i); return res
             except UnicodeDecodeError: continue
         return ''
     @staticmethod
@@ -192,14 +199,17 @@ class Fabits:
     def funset(self)->None:
         '''initialize useful function'''
         self.clrtul=lambda: (self.tul.reset(),self.tul.ht(),self.tul.speed(0),self.tul.penup())
+        self.fntl=lambda ftsz: (self.fnt,self.size(ftsz),'bold')
         self.fulnm=lambda pth,flnm: os.path.join(pth,flnm)
-        self.scl=lambda tag: (tag.focus_set(),tag.selection_range(0,'end'))
+        self.notqut=lambda: self.note.fclose(self.note.now)
+        self.pgqut=lambda: (self.Api.state(0),self.wmqut(self.pgbar.pg,'pgbar'))
+        self.run=lambda: (self.wm.deiconify(),self.icon.icon(self.ani),self.wm.mainloop())
         self.show=lambda tag,clr,*args: tag.see(tag.insert('','end',values=args,tags=(clr,)))
         self.size=lambda x: round(x*self.scfac)
         self.title=lambda tle: self.wm.title(self.data['tle']+tle)
         self.thr=lambda fun,*args: lambda: threading.Thread(target=fun,args=args).start()
-        self.thrpg=lambda tx,num: self.wm.after(0,self.pgbar.pgini,tx,num)
-        self.thrqut=lambda: self.wm.after(1000,self.pgbar.pgqut)
+        self.thrpg=lambda tx,num: self.wm.after(0,self.pgbar.pgbar,tx,num)
+        self.thrqut=lambda: self.wm.after(1000,self.pgqut)
         self.thrshw=lambda clr,*args: self.wm.after(0,self.show,self.csl,clr,*args)
         self.thrupd=lambda num,tx,clr: self.wm.after(0,self.pgbar.pgupd,num,tx,clr)
         self.web=lambda tag: webbrowser.open(self.data[tag])
@@ -218,107 +228,91 @@ class Fabits:
                 ltmp+=1; hdg=hsh.hexdigest()
             yield int(hdg[lhdg:lhdg+2],16)
             lhdg+=2
-    def inperr(self,tag:tkinter.Toplevel,arg:str,val:any=None)->None:
-        '''deal windows close without return value'''
-        self.val=val; self.wmqut(tag,arg)
     def mb(self,icn:str,tp:str,tle:str,msg:str)->str:
         '''create message box'''
         mbdata=self.data['mb']
         mbtmp=messagebox.Message(icon=mbdata[icn],type=mbdata[tp],title=tle,message=msg)
         res=mbtmp.show(); return res
-    def notemp(self,name:str,num:int)->tuple[ttk.Frame,list[ttk.Frame]]:
+    def misc(self)->None:
+        '''create missing texture'''
+        arr=zeros((1024,1024,3),dtype=uint8); arr[0:512,0:512]=[255,0,255]
+        arr[512:1024,512:1024]=[255,0,255]; pic=fromarray(arr); pic.save('Img/misc.png')
+    def notemp(self,num:int)->tuple[ttk.Frame,list[ttk.Frame]]:
         '''create window on notebook widget'''
-        emp=ttk.Frame(self.note); self.note.add(emp,name)
-        emps=[ttk.Frame(emp) for i in range(num)]
-        return emp,emps
+        emp=ttk.Frame(self.note); emps=[ttk.Frame(emp) for i in range(num)]; return emp,emps
     def savcfg(self)->None:
         '''save configure after app closed'''
-        self.wmqut(self.pgbar.pg,'pgini')
-        self.note.clsall(); self.wmqut(self.wm,'Fabits')
-        fl=open('Json/Config.json','w',encoding='utf-8')
-        json.dump(self.cfg,fl,ensure_ascii=0,indent=4); fl.close; self.Api.uninit()
-        if self.reboot:
-            now=sys.executable
-            if sys.argv[0].endswith('.py'): subprocess.Popen([now,sys.argv[0]])
-            else: subprocess.Popen([now])
-            exit(0)
+        self.Api.uninit(); self.note.clsall(); self.wmqut(self.wm,'Fabits')
+        self.cfg['sc']=self.sc; fl=open('Json/Config.json','w',encoding='utf-8')
+        json.dump(self.cfg,fl,ensure_ascii=0,indent=4); fl.close()
+    def stlchk(self)->None:
+        '''check cfg for default configure'''
+        init={'font':'TkDefaultFont','knds':[0]*4,
+              'ani':1,'bgidx':2,'style':'clam','sc':[0]*3}
+        for i in init:
+            if i not in self.cfg: self.cfg[i]=init[i]
     def style(self)->None:
         '''set widget style'''
-        sty=ttk.Style(self.wm); fnt=(self.fnt,self.size(0.4),self.fntknd)
-        self.wm.config(bg=self.bg); self.scrn.bgcolor(self.bg)
-        if self.bgidx: sty.theme_use('clam')
+        self.fnt=self.cfg['font']; self.knd=''
+        knds=['bold','italic','underline','overstrike']
+        for i in range(4): self.knd+=f'{knds[i]} ' if self.cfg['knds'][i] else ''
+        if not self.knd: self.knd='normal'
+        self.ani,self.bgidx=self.cfg['ani'],self.cfg['bgidx']
+        if self.bgidx==2:
+            self.bgidx=0 if 6<=time.localtime().tm_hour<18 else 1
+        self.bg,self.fg,self.bgin=self.data['style'][self.bgidx]
+        sty=ttk.Style(self.wm); self.fntx=(self.fnt,self.size(0.4),self.knd)
+        self.stl=self.cfg['style']; sty.theme_use(self.stl)
         sty.configure('.',background=self.bgin,fieldbackground=self.bg)
         sty.configure('.',foreground=self.fg,font=self.fnt)
-        sty.configure('Treeview',font=fnt,rowheight=self.scfac,background=self.bg)
+        sty.configure('Treeview',background=self.bg,font=self.fntx,rowheight=self.scfac)
         sty.layout('Treeview',[('Treeview.treearea',{'sticky':'nswe'})])
         sty.layout('TNotebook',[('TNotebook.Tab',{'sticky':'nswe'})])
         sty.map('TNotebook.Tab',background=[('selected',self.bg),('active',self.bg)])
+        self.tplsty(); self.wm.event_generate('<<style>>')
+    def tplsty(self)->None:
+        '''change style for toplevel'''
+        for i in self.tpls: self.Api.creblk(self.bgidx,self.tpls[i].winfo_id())
     def wmini(self)->None:
         '''initialize data and program necessarity'''
         self.scfac=Api.scfac; self.wm=tkinter.Tk(); self.wm.withdraw()
+        self.tpls={'Fabits':self.wm}
         self.imgs={'Na':[None,None],'Fl':['文件(F)',None],'Al':['算法(A)',None],
                    'Ba':['批处理(B)',None],'In':['网络(I)',None],
                    'Tl':['工具(T)',None],'St':['设置(S)',None]}
-        try:
-            for i in self.imgs: self.imgs[i][1]=tkinter.PhotoImage(file=f'Img/{i}.png')
-        except Exception as e: messagebox.showerror('错误',e); exit(0)
+        msgtx=['找不到{}','非法的{}\n请检查是否存在语法错误']
+        fls=['Json/Data.json','Json/Config.json']; self.json=[{},{}]
+        exist=lambda flnm: os.path.isfile(f'Img/{flnm}.png')
+        for i in self.imgs:
+            if exist(i): self.imgs[i][1]=tkinter.PhotoImage(file=f'Img/{i}.png')
+            else:
+                if not exist('misc'): self.misc()
+                self.imgs[i][1]=tkinter.PhotoImage(file=f'Img/misc.png')
         self.wm.iconphoto(1,self.imgs['Na'][1])
-        try:
-            fld=open('Json/Data.json','r',encoding='utf-8')
-            self.data=json.load(fld); fld.close()
-        except FileNotFoundError: messagebox.showerror('错误','找不到Data.json'); exit(0)
-        except:
-            messagebox.showerror('错误','非法的Data.json\n请检查是否存在语法错误')
-            fld.close(); exit(0)
-        try:
-            flc=open('Json/Config.json','r',encoding='utf-8')
-            self.cfg=json.load(flc); flc.close()
-        except FileNotFoundError:
-            messagebox.showwarning('提示','找不到Config.json')
-            if messagebox.askyesno('','是否继续运行?'): self.cfg={}
-            else: exit(0)
-        except:
-            messagebox.showwarning('提示','非法的Config.json\n请检查是否存在语法错误'); flc.close()
-            if messagebox.askyesno('','是否继续运行?(会覆盖原有文件)'): self.cfg={}
-            else: exit(0)
+        for i in range(2):
+            try: fl=open(fls[i],'r',encoding='utf-8'); self.json[i]=json.load(fl); fl.close()
+            except FileNotFoundError: messagebox.showerror('错误',msgtx[0].format(fls[i])); exit(0)
+            except: messagebox.showerror('错误',msgtx[1].format(fls[i])); fl.close(); exit(0)
+        self.data,self.cfg=self.json
     def wminp(self,st:str,knd:type=str,show:str='')->any:
         '''a simple variable input widget'''
-        inp,inpemp=self.cretpl('',18,5,'wminp',3); inpbtx=['全选','确认','取消']
+        if 'wminp' in self.tpls: return None
+        inp,inpemp=self.cretpl('',18,5,'wminp',3); self.val=None; inpbtx=['确认','取消']
         inplb=ttk.Label(inpemp[0],text=st); self.inpvar=tkinter.StringVar(value=show)
         inpet=ttk.Entry(inpemp[1],width=40,textvariable=self.inpvar)
-        inpcmd=[lambda: self.scl(inpet),lambda: self.getvar(self.inpvar,inp,'wminp',knd),
-                lambda: self.inperr(inp,'wminp')]
-        for i in range(3):
+        inpcmd=[lambda: self.getvar(self.inpvar,inp,'wminp',knd),
+                lambda: self.wmqut(inp,'wminp')]
+        for i in range(2):
             inpbtn=ttk.Button(inpemp[2],text=inpbtx[i],command=inpcmd[i])
             inpbtn.pack(side='left',expand=1)
         inplb.pack(expand=1); inpet.pack(expand=1)
         for i in range(3): inpemp[i].pack(fill='both',expand=1)
-        inp.protocol('WM_DELETE_WINDOW',lambda: self.inperr(inp,'wminp'))
+        inp.protocol('WM_DELETE_WINDOW',lambda: self.wmqut(inp,'wminp'))
         inp.wait_window(); return self.val
     def wmqut(self,arg:tkinter.Tk|tkinter.Toplevel,key:str)->None:
         '''window quit'''
-        wth,hgt,spacex,spacey=arg.winfo_width(),arg.winfo_height(),arg.winfo_x(),arg.winfo_y()
-        self.cfg[key]=f'{wth}x{hgt}+{spacex}+{spacey}'; arg.destroy()
-    def wmset(self)->None:
-        '''set const and setting for app start'''
-        self.scwth,self.schgt=self.wm.winfo_screenwidth(),self.wm.winfo_screenheight()
-        scmsg,self.reboot=self.cfg.get('sc',[0,0,0]),0
-        self.cfg['sc']=[self.scfac,self.scwth,self.schgt]; self.check=scmsg==self.cfg['sc']
-        self.fntknds=['bold','italic','underline','overstrike']
-        self.bgidx,self.fnt,self.fntknd=self.cfg.get('bgidx',-1),self.cfg.get('font',''),''
-        if self.bgidx==-1: self.cfg['bgidx']=self.bgidx=2
-        if self.fnt=='': self.cfg['font']=self.fnt='TkDefaultFont'
-        for i in self.fntknds:
-            if i not in self.cfg: self.cfg[i]=0
-            self.fntknd+=f'{i} ' if self.cfg[i] else ''
-        if not self.fntknd: self.fntknd='normal'
-        if self.bgidx==2: lctime=time.localtime(); self.bgidx=0 if 6<=lctime.tm_hour<18 else 1
-        self.bg=self.data['bg'][self.bgidx]; self.fg=self.data['fg'][self.bgidx]
-        self.bgin=self.data['bgin'][self.bgidx]
-        self.wm.update_idletasks(); self.Api=Api(self.wm.winfo_id())
-        if self.bgidx: self.Api.creblk()
-        self.wm.geometry(self.calsz(64,36,'Fabits')); self.wm.title(self.data['tle'])
-        self.wm.protocol('WM_DELETE_WINDOW',self.savcfg); self.wm.deiconify()
+        wth,hgt,posx,posy=arg.winfo_width(),arg.winfo_height(),arg.winfo_x(),arg.winfo_y()
+        self.cfg[key]=f'{wth}x{hgt}+{posx}+{posy}'; self.tpls.pop(key); arg.destroy()
 class Adend:
     '''add lack file end'''
     def __init__(self,io:Fabits)->None: self.io=io
@@ -358,7 +352,12 @@ class Adend:
         self.io.thrshw('purple','>>>')
 class Calc:
     '''scientific calculator'''
-    def __init__(self,io:Fabits)->None: self.io=io
+    def __init__(self,io:Fabits)->None:
+        '''set initialize'''
+        self.io=io; self.bgf=[]; self.io.wm.bind('<<style>>',self.bgs,'+')
+    def bgs(self,*args)->None:
+        '''set widget style'''
+        for i in self.bgf: i()
     def cal(self)->None:
         '''deal calculate case for scientific calculator'''
         if not self.lexp: return
@@ -371,19 +370,19 @@ class Calc:
         except: self.calscl[0].config(text='语法错误')
     def calc(self)->None:
         '''construct window'''
-        self.relnm='计算器'
-        if self.io.note.opened(self.relnm): return
-        cal,self.calemp=self.io.notemp(self.relnm,2); self.now=0
-        fnt=lambda fsz: (self.io.fnt,self.io.size(fsz),'bold')
-        self.menu=Navigation(cal,self.io.bgin,self.io.fg,self.io.bg)
+        relnm='计算器'
+        if self.io.note.opened(relnm): return
+        cal,self.calemp=self.io.notemp(2)
+        self.io.note.add(cal,relnm,1,self); self.now=0
+        self.mnu=Navigation(cal,self.io); self.bgf+=[self.mnu.bgs]
         mnus={'切换计算器(C)':{'科学计算器':lambda: self.calchg(0),'程序计算器':lambda: self.calchg(1)},
-              '选项(O)':{'精度':self.calset,'退出':lambda: self.io.note.fclose(self.io.note.now)}}
+              '选项(O)':{'精度':self.calset,'退出':self.io.notqut}}
         for i in mnus:
-            self.menu.add_cascade(i,font=fnt(0.36),padx=self.io.scfac/3,pady=self.io.scfac/3)
+            self.mnu.add_cascade(i,0.36,padx=self.io.scfac/3,pady=self.io.scfac/3)
             for j in mnus[i]:
-                self.menu.add_command(j,fnt(0.3),mnus[i][j],2*self.io.scfac,self.io.scfac/6)
+                self.mnu.add_command(j,0.3,mnus[i][j],2*self.io.scfac,self.io.scfac/6)
         self.calsci(); self.calpgm()
-        self.ratio=0.15; self.menu.place(relx=0,rely=0,relwidth=self.ratio,relheight=1)
+        self.ratio=0.15; self.mnu.place(relx=0,rely=0,relwidth=self.ratio,relheight=1)
         self.calemp[0].place(relx=self.ratio,rely=0,relwidth=1-self.ratio,relheight=1)
     def calchg(self,knd:int)->None:
         '''change calculator'''
@@ -428,25 +427,25 @@ class Calc:
         return self.calstk(expsyn,lexp,1,self.calpyn)
     def calinp(self,tx:str)->None:
         '''input for scientific calculator'''
-        if tx=='M': self.msci=self.ressci; return
-        elif tx=='=':
-            self.io.thr(self.cal)(); return
-        if tx=='AC': self.expidx,self.lexp=0,0
-        elif tx=='←':
-            if self.expidx!=0:
-                self.expidx-=1; self.lexp-=1
-                for i in range(self.expidx,self.lexp): self.expsyn[i]=self.expsyn[i+1]
-        elif tx=='<-':
-            if self.expidx>0: self.expidx-=1
-        elif tx=='->':
-            if self.expidx<self.lexp: self.expidx+=1
-        elif tx=='|x|':
-            for i in range(self.lexp-1,self.expidx-1,-1): self.expsyn[i+2]=self.expsyn[i]
-            self.expsyn[self.expidx]=self.expsyn[self.expidx+1]='|'
-            self.expidx+=2; self.lexp+=2
-        else:
-            for i in range(self.lexp-1,self.expidx-1,-1): self.expsyn[i+1]=self.expsyn[i]
-            self.expsyn[self.expidx]=tx; self.expidx+=1; self.lexp+=1
+        match tx:
+            case 'M': self.msci=self.ressci; return
+            case '=': self.io.thr(self.cal)(); return
+            case 'AC': self.expidx,self.lexp=0,0
+            case '←':
+                if self.expidx!=0:
+                    self.expidx-=1; self.lexp-=1
+                    for i in range(self.expidx,self.lexp): self.expsyn[i]=self.expsyn[i+1]
+            case '<-':
+                if self.expidx>0: self.expidx-=1
+            case '->':
+                if self.expidx<self.lexp: self.expidx+=1
+            case '|x|':
+                for i in range(self.lexp-1,self.expidx-1,-1): self.expsyn[i+2]=self.expsyn[i]
+                self.expsyn[self.expidx]=self.expsyn[self.expidx+1]='|'
+                self.expidx+=2; self.lexp+=2
+            case _:
+                for i in range(self.lexp-1,self.expidx-1,-1): self.expsyn[i+1]=self.expsyn[i]
+                self.expsyn[self.expidx]=tx; self.expidx+=1; self.lexp+=1
         newexp=''.join(self.expsyn[:self.expidx]+['I']+self.expsyn[self.expidx:self.lexp])
         self.calscl[0].config(text=' '); self.calscl[1].config(text=newexp)
     def calp(self)->None:
@@ -465,21 +464,21 @@ class Calc:
         except: self.calpgl[0].config(text='语法错误')
     def calpnp(self,tx:str)->None:
         '''input for program calculator'''
-        if tx=='M': self.mpgm=self.respgm; return
-        elif tx=='=':
-            self.io.thr(self.calp)(); return
-        if tx=='AC': self.pgmidx,self.pexp=0,0
-        elif tx=='←':
-            if self.pgmidx!=0:
-                self.pgmidx-=1; self.pexp-=1
-                for i in range(self.pgmidx,self.pexp): self.pgmsyn[i]=self.pgmsyn[i+1]
-        elif tx=='<-':
-            if self.pgmidx>0: self.pgmidx-=1
-        elif tx=='->':
-            if self.pgmidx<self.lexp: self.pgmidx+=1
-        else:
-            for i in range(self.pexp-1,self.pgmidx-1,-1): self.pgmsyn[i+1]=self.pgmsyn[i]
-            self.pgmsyn[self.pgmidx]=tx; self.pgmidx+=1; self.pexp+=1
+        match tx:
+            case 'M': self.mpgm=self.respgm; return
+            case '=': self.io.thr(self.calp)(); return
+            case 'AC': self.pgmidx,self.pexp=0,0
+            case '←':
+                if self.pgmidx!=0:
+                    self.pgmidx-=1; self.pexp-=1
+                    for i in range(self.pgmidx,self.pexp): self.pgmsyn[i]=self.pgmsyn[i+1]
+            case '<-':
+                if self.pgmidx>0: self.pgmidx-=1
+            case '->':
+                if self.pgmidx<self.lexp: self.pgmidx+=1
+            case _:
+                for i in range(self.pexp-1,self.pgmidx-1,-1): self.pgmsyn[i+1]=self.pgmsyn[i]
+                self.pgmsyn[self.pgmidx]=tx; self.pgmidx+=1; self.pexp+=1
         newexp=''.join(self.pgmsyn[:self.pgmidx]+['I']+self.pgmsyn[self.pgmidx:self.pexp])
         self.calpgl[0].config(text=' '); self.calpgl[1].config(text=newexp)
     def calpgm(self)->None:
@@ -625,6 +624,7 @@ class Calc:
             tl=rl
         if rl==1: return rsyn[0]
         else: raise SyntaxError
+    def clrbgf(self)->None: self.bgf=[]
 class Cdmix:
     '''code mixer'''
     def __init__(self,io:Fabits)->None: self.io=io
@@ -661,12 +661,12 @@ class Cdmix:
         self.io.thrshw('purple','>>>')
     def cdmix(self)->None:
         '''construct window'''
-        self.relnm='代码混合器'
-        if self.io.note.opened(self.relnm): return
-        cd,cdemp=self.io.notemp(self.relnm,4)
+        relnm='代码混合器'
+        if self.io.note.opened(relnm): return
+        cd,cdemp=self.io.notemp(4); self.io.note.add(cd,relnm)
         self.cdvar=[tkinter.StringVar() for i in range(3)]
         cdtx,cdbtx=['Python源代码','C/C++源代码','生成到'],['生成','退出']
-        cdcmd=[lambda: self.cdchk(),lambda: self.io.note.fclose(self.io.note.now)]
+        cdcmd=[lambda: self.cdchk(),self.io.notqut]
         for i in range(3):
             cdlb=ttk.Label(cdemp[i],text=cdtx[i],width=12)
             cdet=ttk.Entry(cdemp[i],width=50,textvariable=self.cdvar[i])
@@ -708,7 +708,13 @@ class Clrplc:
         self.io.thrshw('purple','>>>')
 class Cmdmng:
     '''command manager'''
-    def __init__(self,io:Fabits): self.io=io
+    def __init__(self,io:Fabits)->None:
+        '''set initialize'''
+        self.io=io; self.bgf=[]; self.io.wm.bind('<<style>>',self.bgs,'+')
+    def bgs(self,*args)->None:
+        '''set widget style'''
+        for i in self.bgf: i()
+    def clrbgf(self)->None: self.bgf=[]
     def cmdadd(self)->None:
         '''add new command for command manager'''
         nm=self.io.wminp('新名称')
@@ -747,32 +753,30 @@ class Cmdmng:
         self.cfg.pop(lnm); self.cfg[nm]=cmd
     def cmdmng(self)->None:
         '''construct window'''
-        self.relnm='命令管理器'
-        if self.io.note.opened(self.relnm): return
-        cmd,cmdemp=self.io.notemp(self.relnm,1)
+        relnm='命令管理器'
+        if self.io.note.opened(relnm): return
+        cmd,cmdemp=self.io.notemp(1); self.io.note.add(cmd,relnm,1,self)
         cmdmnu={'命令(C)':{'添加':self.cmdadd,'修改':self.cmdmdf,'删除':self.cmddel},
                 '运行(R)':{'预览':lambda: self.cmdrun(pre=1),'运行':self.cmdrun},
-                '选项(O)':{'退出':lambda: self.io.note.fclose(self.io.note.now)}}
-        fnt=lambda fsz: (self.io.fnt,self.io.size(fsz),'bold')
-        self.menu=Navigation(cmd,self.io.bgin,self.io.fg,self.io.bg)
+                '选项(O)':{'退出':self.io.notqut}}
+        self.mnu=Navigation(cmd,self.io); self.bgf+=[self.mnu.bgs]
         for i in cmdmnu:
-            self.menu.add_cascade(i,font=fnt(0.36),padx=self.io.scfac/3,pady=self.io.scfac/3)
+            self.mnu.add_cascade(i,0.36,padx=self.io.scfac/3,pady=self.io.scfac/3)
             for j in cmdmnu[i]:
-                self.menu.add_command(j,fnt(0.3),cmdmnu[i][j],2*self.io.scfac,self.io.scfac/6)
+                self.mnu.add_command(j,0.3,cmdmnu[i][j],2*self.io.scfac,self.io.scfac/6)
         self.cmdtre=ttk.Treeview(cmdemp[0],columns=('nm','cmd'),show='headings')
         self.cmdtre.heading('nm',text='名称'); self.cmdtre.heading('cmd',text='命令')
         self.cmdtre.column('nm',width=3*self.io.scfac,anchor='w')
         self.cmdtre.column('cmd',width=12*self.io.scfac,anchor='w')
         cmdslb=tkinter.Scrollbar(cmdemp[0]); self.cmdtre.config(yscrollcommand=cmdslb.set)
         cmdslb.config(command=self.cmdtre.yview)
-        for i in self.io.data['clr']:
-            self.cmdtre.tag_configure(i,foreground=i,background=self.io.bg)
+        for i in self.io.data['clr']: self.cmdtre.tag_configure(i,foreground=i)
         cmdslb.pack(side='right',fill='y'); self.cmdtre.pack(fill='both',expand=1)
-        if 'commands' not in self.io.cfg: self.io.cfg['commands']={}
-        self.cfg=self.io.cfg['commands']
+        if 'cmds' not in self.io.cfg: self.io.cfg['cmds']={}
+        self.cfg=self.io.cfg['cmds']
         for i in self.cfg:
             self.io.show(self.cmdtre,'green',i,self.cfg[i])
-        ratio=0.15; self.menu.place(relx=0,rely=0,relwidth=ratio,relheight=1)
+        ratio=0.15; self.mnu.place(relx=0,rely=0,relwidth=ratio,relheight=1)
         cmdemp[0].place(relx=ratio,rely=0,relwidth=1-ratio,relheight=1)
     def cmdout(self,cmd:str)->None:
         '''print command line message'''
@@ -829,12 +833,11 @@ class Cmpil:
         self.cmpout(cmd)
     def cmpil(self)->None:
         '''construct window'''
-        self.relnm='编译链接库'
-        if self.io.note.opened(self.relnm): return
-        cmp,cmpemp=self.io.notemp(self.relnm,4)
+        relnm='编译链接库'
+        if self.io.note.opened(relnm): return
+        cmp,cmpemp=self.io.notemp(4); self.io.note.add(cmp,relnm)
         cmptx,cmpbtx=['编译类型','选择文件','其它参数'],['预览','开始','退出']
-        cmpcmd=[self.io.thr(self.cmpchk,1),self.io.thr(self.cmpchk,0),
-                lambda: self.io.note.fclose(self.io.note.now)]
+        cmpcmd=[self.io.thr(self.cmpchk,1),self.io.thr(self.cmpchk,0),self.io.notqut]
         self.cmpknd=tkinter.IntVar(value=0)
         self.cmpvar=[tkinter.StringVar() for i in range(2)]; cmpknd=['.dll','.exe']
         for i in range(3):
@@ -867,22 +870,28 @@ class Cmpil:
         while tmptx: self.io.show(self.io.csl,cl,tmptx); idx+=80; tmptx=tx[idx:idx+80]
 class Hlp:
     '''help page'''
-    def __init__(self,io:Fabits)->None: self.io=io
+    def __init__(self,io:Fabits)->None:
+        '''set initialize'''
+        self.io=io; self.bgf=[]; self.io.wm.bind('<<style>>',self.bgs,'+')
+    def bgs(self,*args)->None:
+        '''set widget style'''
+        for i in self.bgf: i()
+    def clrbgf(self)->None: self.bgf=[]
     def hlp(self)->None:
         '''construct window'''
-        self.relnm='帮助'
-        if self.io.note.opened(self.relnm): return
-        hlp,hlpemp=self.io.notemp(self.relnm,1); hlptx=self.io.data['hlp']
+        relnm='帮助'
+        if self.io.note.opened(relnm): return
+        hlp,hlpemp=self.io.notemp(1)
+        self.io.note.add(hlp,relnm,1,self); hlptx=self.io.data['hlp']
         hlpmnu={'帮助内容(I)':{hlptx[i]:lambda knd=i: self.hlpshw(knd) for i in hlptx},
-                '选项(O)':{'退出':lambda: self.io.note.fclose(self.io.note.now)}}
-        self.menu=Navigation(hlp,self.io.bgin,self.io.fg,self.io.bg)
-        fnt=lambda fsz: (self.io.fnt,self.io.size(fsz),'bold')
+                '选项(O)':{'退出':self.io.notqut}}
+        self.mnu=Navigation(hlp,self.io); self.bgf+=[self.mnu.bgs]
         for i in hlpmnu:
-            self.menu.add_cascade(i,font=fnt(0.36),padx=self.io.scfac/3,pady=self.io.scfac/3)
+            self.mnu.add_cascade(i,0.36,padx=self.io.scfac/3,pady=self.io.scfac/3)
             for j in hlpmnu[i]:
-                self.menu.add_command(j,fnt(0.3),hlpmnu[i][j],2*self.io.scfac,self.io.scfac/6)
+                self.mnu.add_command(j,0.3,hlpmnu[i][j],2*self.io.scfac,self.io.scfac/6)
         self.hlptre=self.io.cretre(hlpemp[0]); self.hlpshw('F')
-        ratio=0.15; self.menu.place(relx=0,rely=0,relwidth=ratio,relheight=1)
+        ratio=0.15; self.mnu.place(relx=0,rely=0,relwidth=ratio,relheight=1)
         hlpemp[0].place(relx=ratio,rely=0,relwidth=1-ratio,relheight=1)
     def hlpshw(self,knd:str)->None:
         '''print help message'''
@@ -999,14 +1008,20 @@ class Iso:
         for i in range(self.num):
             isob,isoc,isotmp=0,0,0; isoa=i-2*isoc
             while isoc<=isoa:
-                isotmp+=isonum[isoa]*isonum[isob]*isonum[isoc]; isoa,isob=isoa-1,isob+1
+                isotmp+=isonum[isoa]*isonum[isob]*isonum[isoc]; isoa-=1; isob+=1
                 if isoa<isob: isoc+=1; isoa,isob=i-2*isoc,isoc
             isonum[liso],liso=isotmp,liso+1
         self.io.thrshw('green',f'{isonum[self.num]}')
         self.io.thrshw('purple','>>>')
 class Itmsth:
     '''item strength tool for Genshin Impact'''
-    def __init__(self,io:Fabits)->None: self.io=io
+    def __init__(self,io:Fabits)->None:
+        '''set initialize'''
+        self.io=io; self.bgf=[]; self.io.wm.bind('<<style>>',self.bgs,'+')
+    def bgs(self,*args)->None:
+        '''set widget style'''
+        for i in self.bgf: i()
+    def clrbgf(self)->None: self.bgf=[]
     def itmadd(self)->None:
         '''add item to treeview'''
         if self.itmnum==-1: return
@@ -1026,7 +1041,8 @@ class Itmsth:
     def itmgen(self)->None:
         '''generate item'''
         self.ppts,self.pptlvls,self.itknd=[0]*4,[0]*5,random.randint(0,4)
-        mns=self.io.data['mns'][self.itknd]; self.mn=random.choices(mns[0],weights=mns[1])[0]
+        mns=self.io.data['mns'][self.itknd]
+        self.mn=random.choices(mns[0],weights=mns[1])[0]
         if self.mn==-1: self.mn=random.randint(0,2)
         if self.mn==-2:
             self.mn=random.choice(self.io.data['elmnkd'])
@@ -1036,14 +1052,17 @@ class Itmsth:
         else: self.mn=self.io.data['name'][self.mn]
         self.lppts,self.nm=0,random.choices((3,4),weights=(4,1))[0]
         while self.lppts<self.nm:
-            ppt=random.choices(range(len(self.io.data['pptpro'])),weights=self.io.data['pptpro'])[0]
+            lst=range(len(self.io.data['pptpro']))
+            ppt=random.choices(lst,weights=self.io.data['pptpro'])[0]
             if ppt not in self.ppts and self.io.data['name'][ppt]!=self.mn:
-                self.pptlvls[self.lppts]=self.io.data['pptmax'][ppt]*random.choice(self.io.data['pptupd'])
+                upd=random.choice(self.io.data['pptupd'])
+                self.pptlvls[self.lppts]=self.io.data['pptmax'][ppt]*upd
                 self.ppts[self.lppts]=ppt; self.lppts+=1
         self.itmnum+=1; self.itmprt()
     def itmprt(self,pptidx=-1)->None:
         '''print item for item strength tool'''
-        self.io.show(self.io.csl,'cyan',f"{self.io.data['itmknd'][self.itknd]}(+{self.pptlvls[4]})")
+        knd=f"{self.io.data['itmknd'][self.itknd]}(+{self.pptlvls[4]})"
+        self.io.show(self.io.csl,'cyan',knd)
         self.io.show(self.io.csl,'blue',self.mn)
         for i in range(self.lppts):
             ppt=self.io.data['name'][self.ppts[i]]
@@ -1055,20 +1074,20 @@ class Itmsth:
         self.io.show(self.io.csl,'purple','>>>')
     def itmsth(self)->None:
         '''construct window'''
-        self.relnm='圣遗物强化'
-        if self.io.note.opened(self.relnm): return
-        itm,itmemp=self.io.notemp(self.relnm,1); self.itmnum,self.res=-1,{}
+        relnm='圣遗物强化'
+        if self.io.note.opened(relnm): return
+        itm,itmemp=self.io.notemp(1)
+        self.io.note.add(itm,relnm,1,self); self.itmnum,self.res=-1,{}
         itmmnu={'圣遗物(I)':{'获取':self.itmgen,'强化':self.itmupd,'入库':self.itmadd},
-                '选项(O)':{'清空':self.itmclr,'退出':lambda: self.io.note.fclose(self.io.note.now)}}
-        self.menu=Navigation(itm,self.io.bgin,self.io.fg,self.io.bg)
-        fnt=lambda fsz: (self.io.fnt,self.io.size(fsz),'bold')
+                '选项(O)':{'清空':self.itmclr,'退出':self.io.notqut}}
+        self.mnu=Navigation(itm,self.io); self.bgf+=[self.mnu.bgs]
         for i in itmmnu:
-            self.menu.add_cascade(i,font=fnt(0.36),padx=self.io.scfac/3,pady=self.io.scfac/3)
+            self.mnu.add_cascade(i,0.36,padx=self.io.scfac/3,pady=self.io.scfac/3)
             for j in itmmnu[i]:
-                self.menu.add_command(j,fnt(0.3),itmmnu[i][j],2*self.io.scfac,self.io.scfac/6)
+                self.mnu.add_command(j,0.3,itmmnu[i][j],2*self.io.scfac,self.io.scfac/6)
         itmlb=ttk.Label(itmemp[0],text='强化结果:'); itmlb.pack(pady=self.io.scfac/3)
         self.itmtre=self.io.cretre(itmemp[0])
-        ratio=0.15; self.menu.place(relx=0,rely=0,relwidth=ratio,relheight=1)
+        ratio=0.15; self.mnu.place(relx=0,rely=0,relwidth=ratio,relheight=1)
         itmemp[0].place(relx=ratio,rely=0,relwidth=1-ratio,relheight=1)
     def itmupd(self)->None:
         '''upgrage item for item strength tool'''
@@ -1076,7 +1095,8 @@ class Itmsth:
         self.pptlvls[4]+=4
         if self.lppts==3:
             while self.lppts!=4:
-                ppt=random.choices(range(len(self.io.data['pptpro'])),weights=self.io.data['pptpro'])[0]
+                lst=range(len(self.io.data['pptpro']))
+                ppt=random.choices(lst,weights=self.io.data['pptpro'])[0]
                 if ppt not in self.ppts and self.io.data['name'][ppt]!=self.mn:
                     sth=random.choice(self.io.data['pptupd'])
                     self.pptlvls[self.lppts]=self.io.data['pptmax'][ppt]*sth
@@ -1115,6 +1135,7 @@ class Mazen:
     def __init__(self,io:Fabits)->None: self.io=io
     def mazen(self)->None:
         '''construct window'''
+        if 'mzgd' in self.io.tpls: return
         self.mz,mzemp=self.io.cretpl('迷宫可视化',20,8,'mzgd',5)
         mzlb=ttk.Label(mzemp[0],text='迷宫设置'); mzlb.pack(expand=1)
         mztx,mzbtx=['迷宫长','迷宫宽','起点x','起点y','终点x','终点y'],['生成','解','退出']
@@ -1212,20 +1233,26 @@ class Mazen:
         self.mzbtn[0].config(state='normal')
 class Navigation(ttk.Frame):
     '''navigation menu widget'''
-    def __init__(self,master:ttk.Frame,bg:str=None,fg:str=None,hl:str=None)->None:
+    def __init__(self,master:ttk.Frame,io:Fabits)->None:
         '''initialize navigation widget'''
-        super().__init__(master); self.bg,self.fg,self.hl=bg,fg,hl
+        super().__init__(master); self.io=io; self.bgf=[]
         self.state:dict[str:list[tkinter.PhotoImage,int]]={}
-    def add_cascade(self,tx:str,ico=None,size=1,font=None,padx=0,pady=0)->None:
+    def add_cascade(self,tx:str,ftsz:float,ico=None,size=1,padx=0,pady=0)->None:
         '''add top menu'''
-        item=ttk.Frame(self); main=tkinter.Frame(item,bg=self.bg,padx=padx,pady=pady)
+        item=ttk.Frame(self); main=tkinter.Frame(item,padx=padx,pady=pady)
+        text=tkinter.Label(main,text=tx); dire=tkinter.Label(main,text='▶')
+        text.config(bg=self.io.bgin,fg=self.io.fg,font=self.io.fntl(ftsz))
+        dire.config(bg=self.io.bgin,fg=self.io.fg); main.config(bg=self.io.bgin)
+        self.bgf+=[lambda mn=main: mn.config(bg=self.io.bgin),
+            lambda tx=text,sz=ftsz: tx.config(font=self.io.fntl(sz)),
+            lambda tx=text: tx.config(bg=self.io.bgin,fg=self.io.fg),
+            lambda dr=dire: dr.config(bg=self.io.bgin,fg=self.io.fg)]
         self.subs=ttk.Frame(item)
-        text=tkinter.Label(main,text=tx,font=font,bg=self.bg,fg=self.fg)
-        dire=tkinter.Label(main,text='▶',bg=self.bg,fg=self.fg)
         show=lambda arg,text=tx,subs=self.subs,dirl=dire: self.disp(text,subs,dirl)
         if ico:
             self.state[tx]=[ico.subsample(size),0]
-            icon=tkinter.Label(main,image=self.state[tx][0],bg=self.bg)
+            icon=tkinter.Label(main,image=self.state[tx][0],bg=self.io.bgin)
+            self.bgf+=[lambda ic=icon: ic.config(bg=self.io.bgin)]
             icon.pack(side='left')
             on=lambda arg,args=[main,icon,text,dire]: self.light(args,1)
             off=lambda arg,args=[main,icon,text,dire]: self.light(args,0)
@@ -1237,14 +1264,18 @@ class Navigation(ttk.Frame):
         self.rebind(main,'<ButtonRelease-1>',show)
         self.rebind(main,'<Enter>',on); self.rebind(main,'<Leave>',off)
         main.pack(fill='x'); item.pack(fill='x')
-    def add_command(self,tx:str,font=None,cmd=None,padx=0,pady=0)->None:
+    def add_command(self,tx:str,ftsz:float,cmd=None,padx=0,pady=0)->None:
         '''add second menu'''
-        sub=tkinter.Label(self.subs,bg=self.bg,fg=self.fg,anchor='w')
-        sub.config(text=tx,font=font,padx=padx,pady=pady)
+        sub=tkinter.Label(self.subs,text=tx,padx=padx,pady=pady,anchor='w')
+        sub.config(bg=self.io.bgin,fg=self.io.fg,font=self.io.fntl(ftsz))
+        self.bgf+=[lambda su=sub,sz=ftsz: su.config(font=self.io.fntl(sz)),
+            lambda su=sub: su.config(bg=self.io.bgin,fg=self.io.fg)]
         if cmd: sub.bind('<ButtonRelease-1>',lambda *args: cmd())
         sub.bind('<Enter>',lambda arg,subl=sub: self.light([subl],1))
-        sub.bind('<Leave>',lambda arg,subl=sub: self.light([subl],0))
-        sub.pack(fill='x')
+        sub.bind('<Leave>',lambda arg,subl=sub: self.light([subl],0)); sub.pack(fill='x')
+    def bgs(self,*args)->None:
+        '''set widget style'''
+        for i in self.bgf: i()
     def disp(self,text:str,subs:ttk.Frame,dire:ttk.Label)->None:
         '''display submenu'''
         if self.state[text][1]:
@@ -1252,7 +1283,7 @@ class Navigation(ttk.Frame):
         else: dire.config(text='▼'); subs.pack(fill='x'); self.state[text][1]=1
     def light(self,args:list,flag:int)->None:
         '''highlight menu'''
-        bg=self.hl if flag else self.bg
+        bg=self.io.bg if flag else self.io.bgin
         for i in args: i.config(bg=bg)
     def rebind(self,tag,event:str,fun)->None:
         '''recusion bind function'''
@@ -1264,11 +1295,10 @@ class NotebookPlus(ttk.Notebook):
         '''construct window'''
         self.io=io; super().__init__(master)
         self.now=self.cur=None; self.count,self.emp,self.card=1,'未命名文件',[]
-        self.funset(); self.adarg()
-        self.menu=tkinter.Menu(self,tearoff=0)
+        self.funset(); self.adarg(); self.menu=tkinter.Menu(self,tearoff=0)
         self.menu.add_command(label='关闭',command=lambda: self.fclose(self.cur))
         self.menu.add_command(label='全部关闭',command=self.clsall)
-        self.menu.config(bg=self.io.bg,fg=self.io.fg)
+        self.io.wm.bind('<<style>>',self.bgs,'+')
         self.bind('<ButtonRelease-3>',lambda arg: self.right(arg))
         self.bind('<<NotebookTabChanged>>',lambda arg: self.change())
     def adarg(self)->None:
@@ -1278,10 +1308,18 @@ class NotebookPlus(ttk.Notebook):
             if fl.endswith('.nda'): self.fnew(fl)
             else: self.fopen(fl)
         else: self.fnew()
-    def add(self,child,text:str)->None:
+    def add(self,child,text:str,flg:int=0,tag=None)->None:
         '''open window'''
-        self.now=len(self.card); self.card+=[[text,None,0,0,child]]
+        self.now=len(self.card); self.card+=[[text,None,flg,tag,child]]
         super().add(child,text=text); super().select(super().tabs()[self.now])
+    def bgs(self,*args)->None:
+        '''set widget style'''
+        self.menu.config(bg=self.io.bg,fg=self.io.fg)
+        if 'schgd' in self.io.tpls:
+            self.schtg.config(bg=self.io.bgin)
+        for i in range(len(self.card)):
+            if self.isfl(i):
+                self.card[i][4].config(bg=self.io.bg,fg=self.io.fg,font=self.io.fntx)
     def change(self)->None:
         '''change title when change notebook tab'''
         cur=super().select(); tle=''
@@ -1314,6 +1352,7 @@ class NotebookPlus(ttk.Notebook):
                     fl=open(flnm,'w',encoding='utf-8',newline='\n')
                     tx=self.card[idx][4].get('1.0','end'); fl.write(tx); fl.close()
                 elif state=='cancel': return
+        elif self.card[idx][2]: self.card[idx][3].clrbgf()
         super().forget(idx); self.card[idx][4].destroy()
         self.card=self.card[:idx]+self.card[idx+1:]
         if len(self.card)<=self.now: self.now=len(self.card)-1
@@ -1332,8 +1371,6 @@ class NotebookPlus(ttk.Notebook):
                 if i==ldt-1: text.insert('end',dataln[i])
                 else: text.insert('end',dataln[i]+'\n')
         else: text=scrolledtext.ScrolledText(self,undo=1)
-        text.config(bg=self.io.bg,fg=self.io.fg)
-        text.config(font=(self.io.fnt,self.io.size(0.4),self.io.fntknd))
         text.bind('<Key>',lambda arg: self.modify()); nm=f'{self.emp}-{self.count}'
         self.now=len(self.card); self.card+=[[nm,nm,1,0,text]]; self.count+=1
         super().add(text,text=nm); super().select(super().tabs()[self.now])
@@ -1344,8 +1381,6 @@ class NotebookPlus(ttk.Notebook):
         fl=open(flnm,'rb'); datas=fl.read(); fl.close()
         dataln=self.io.decode(datas).splitlines()
         text=scrolledtext.ScrolledText(self,undo=1); ldt=len(dataln)
-        text.config(bg=self.io.bg,fg=self.io.fg)
-        text.config(font=(self.io.fnt,self.io.size(0.4),self.io.fntknd))
         for i in range(ldt):
             if i==ldt-1: text.insert('end',dataln[i])
             else: text.insert('end',dataln[i]+'\n')
@@ -1455,6 +1490,7 @@ class NotebookPlus(ttk.Notebook):
     def schgd(self)->None:
         '''search and replace text for text editor'''
         if not self.isfl(self.now): return
+        if 'schgd' in self.io.tpls: return
         sch,schemp=self.io.cretpl('查找与替换',18,7,'schgd',5); self.last=('','')
         self.nsch,self.nowsch=self.now,self.card[self.now][4]; self.case=tkinter.BooleanVar(value=0)
         self.schvars=[tkinter.StringVar() for i in range(2)]
@@ -1466,9 +1502,9 @@ class NotebookPlus(ttk.Notebook):
             schlb=ttk.Label(schemp[i],text=schtx[i],width=8)
             schet=ttk.Entry(schemp[i],width=30,textvariable=self.schvars[i])
             schlb.pack(side='left',expand=1); schet.pack(side='left',expand=1)
-        schtg=Toggle(schemp[2],2*self.io.scfac,self.io.scfac,self.io.bgin,self.case)
+        self.schtg=Toggle(schemp[2],self.io,self.case)
         schlb=ttk.Label(schemp[2],text='区分大小写',width=32)
-        schlb.pack(side='left',expand=1); schtg.pack(side='left',expand=1)
+        schlb.pack(side='left',expand=1); self.schtg.pack(side='left',expand=1)
         for i in range(6):
             schbtn=ttk.Button(schemp[3+i//3],text=schbtx[i],command=schcmd[i])
             schbtn.pack(side='left',expand=1)
@@ -1482,20 +1518,17 @@ class NotebookPlus(ttk.Notebook):
 class Pgbar:
     '''progressbar window'''
     def __init__(self,io:Fabits)->None: self.io=io
-    def pgini(self,tle:str,tol:int)->None:
-        self.pg.deiconify(); self.pg.title(tle)
-        self.pglb.config(text='0.00%')
-        self.pgpgb['maximum']=tol; self.tol=tol
-        self.pg.update_idletasks(); self.io.Api.state(2)
-    def pgbar(self)->None:
+    def pgbar(self,tle:str,tol:int)->None:
         '''progress bar initialize'''
-        self.pg,pgemp=self.io.cretpl('',16,13,'pgini',3)
-        self.pg.withdraw(); self.pg.update_idletasks()
-        self.pglb=ttk.Label(pgemp[0],text=''); self.pgpgb=ttk.Progressbar(pgemp[1])
-        self.pgtre=self.io.cretre(pgemp[2]); self.pglb.pack(expand=1)
+        if 'pgbar' in self.io.tpls: return
+        self.pg,pgemp=self.io.cretpl('',16,13,'pgbar',3)
+        self.pglb=ttk.Label(pgemp[0],text='0.00%')
+        self.pgpgb=ttk.Progressbar(pgemp[1],maximum=tol)
+        self.pgtre=self.io.cretre(pgemp[2]); self.tol=tol
+        self.pg.update_idletasks(); self.io.Api.state(2)
+        self.pg.title(tle); self.pglb.pack(expand=1)
         self.pgpgb.pack(fill='both',expand=1,padx=self.io.scfac//2,pady=self.io.scfac//4)
         for i in range(3): pgemp[i].pack(fill='both',expand=1)
-        self.pgqut=lambda: (self.io.Api.state(0),self.pg.withdraw(),self.io.clear(self.pgtre))
     def pgupd(self,num:int,tx:str,clr:str)->None:
         '''update progress bar'''
         self.pglb.config(text=f'{100*num/self.tol:.2f}%')
@@ -1532,48 +1565,53 @@ class Piccpt:
         self.io.thrshw('purple','>>>')
 class Precfg:
     '''preference setting'''
-    def __init__(self,io:Fabits)->None: self.io=io
+    def __init__(self,io:Fabits)->None:
+        '''set initialize'''
+        self.io=io; self.bgf=[]; self.io.wm.bind('<<style>>',self.bgs,'+')
+    def bgs(self,*args)->None:
+        '''set widget style'''
+        for i in self.bgf: i()
+    def clrbgf(self)->None: self.bgf=[]
     def preapy(self)->None:
         '''confirm and reboot for preference setting'''
         state={'白天模式':0,'夜间模式':1,'流转模式':2}
-        self.preaply.config(state='disabled')
-        self.cfg['bgidx']=state[self.datavar[0].get()]
-        self.cfg['font']=self.datavar[1].get()
-        for i in range(4): self.cfg[self.io.fntknds[i]]=self.prevars[i].get()
-        self.cfg['ani']=self.anivar.get()
-        if self.io.mb('q','yn','需要重启','是否立即重启以应用设置?')=='yes':
-            self.io.note.clsall()
-            self.io.reboot=1; self.io.savcfg()
+        self.aply.config(state='disabled')
+        self.cfg['bgidx']=state[self.stlvar[0].get()]
+        self.cfg['style'],self.cfg['font']=self.stlvar[1].get(),self.stlvar[2].get()
+        self.cfg['knds']=[self.fntvar[i].get() for i in range(4)]
+        self.cfg['ani']=self.fntvar[4].get()
+        self.io.style()
     def precfg(self)->None:
         '''construct window'''
-        self.relnm='选项'
-        if self.io.note.opened(self.relnm): return
-        pre,preemp=self.io.notemp(self.relnm,9); self.cfg=self.io.cfg
-        pretx=['UI显示模式','字体']; preoptx=[self.io.data['modes'],self.io.data['fonts']]
-        optshw=[preoptx[0][self.cfg['bgidx']],self.cfg['font']]
-        prebtx=['粗体','斜体','下划线','删除线']
-        self.datavar=[tkinter.StringVar(value=optshw[i]) for i in range(2)]
-        self.prevars=[tkinter.IntVar(value=self.cfg[self.io.fntknds[i]]) for i in range(4)]
-        self.anivar=tkinter.IntVar(value=self.cfg.get('ani',1))
-        enable=lambda *args: self.preaply.config(state='normal')
-        for i in range(2):
+        relnm='选项'
+        if self.io.note.opened(relnm): return
+        pre,preemp=self.io.notemp(9)
+        self.io.note.add(pre,relnm,1,self); self.cfg=self.io.cfg
+        pretx=['UI显示模式','主题','字体']; preotx=[self.io.data['modes'],
+            style+self.io.data['styles'],self.io.data['fonts']]
+        optshw=[preotx[0][self.cfg['bgidx']],self.cfg['style'],self.cfg['font']]
+        prebtx=['粗体','斜体','下划线','删除线','是否启用动画']
+        self.stlvar=[tkinter.StringVar(value=optshw[i]) for i in range(3)]
+        self.fntvar=[tkinter.IntVar(value=self.cfg['knds'][i]) for i in range(4)]
+        self.fntvar+=[tkinter.IntVar(value=self.io.ani)]
+        enable=lambda *args: self.aply.config(state='normal')
+        for i in range(3):
             prelb=ttk.Label(preemp[i],text=pretx[i],width=15)
-            preopt=ttk.OptionMenu(preemp[i],self.datavar[i],optshw[i],*preoptx[i])
+            preopt=ttk.OptionMenu(preemp[i],self.stlvar[i],optshw[i],*preotx[i])
             preopt['menu'].configure(bg=self.io.bg,fg=self.io.fg)
+            self.bgf+=[lambda mnu=preopt['menu']: mnu.configure(bg=self.io.bg,fg=self.io.fg)]
             preopt.config(width=30); prelb.pack(side='left',padx=self.io.scfac/3)
-            preopt.pack(side='right',padx=self.io.scfac/3); self.datavar[i].trace('w',enable)
-        for i in range(4):
-            pretg=Toggle(preemp[i+2],2*self.io.scfac,self.io.scfac,self.io.bgin,self.prevars[i],enable)
-            prelb=ttk.Label(preemp[i+2],text=prebtx[i],width=32)
-            prelb.pack(side='left',padx=self.io.scfac/3); pretg.pack(side='right',padx=self.io.scfac/3)
-        anitg=Toggle(preemp[6],2*self.io.scfac,self.io.scfac,self.io.bgin,self.anivar,enable)
-        anilb=ttk.Label(preemp[6],text='是否启用动画',width=32)
-        prelb=ttk.Label(preemp[7],text='部分选项需重启后生效')
-        self.preaply=ttk.Button(preemp[8],text='应用',command=self.preapy,state='disabled')
-        clrbtn=ttk.Button(preemp[8],text='退出',command=lambda: self.io.note.fclose(self.io.note.now))
-        anilb.pack(side='left',padx=self.io.scfac/3); anitg.pack(side='right',padx=self.io.scfac/3)
-        prelb.pack(side='left',padx=self.io.scfac/3); clrbtn.pack(side='right',padx=self.io.scfac/3)
-        self.preaply.pack(side='right',padx=self.io.scfac/3)
+            preopt.pack(side='right',padx=self.io.scfac/3); self.stlvar[i].trace('w',enable)
+        for i in range(5):
+            pretg=Toggle(preemp[i+3],self.io,self.fntvar[i],enable)
+            self.bgf+=[lambda tg=pretg: tg.config(bg=self.io.bgin)]
+            prelb=ttk.Label(preemp[i+3],text=prebtx[i],width=32)
+            prelb.pack(side='left',padx=self.io.scfac/3)
+            pretg.pack(side='right',padx=self.io.scfac/3)
+        self.aply=ttk.Button(preemp[8],text='应用',command=self.preapy,state='disabled')
+        clrbtn=ttk.Button(preemp[8],text='退出',command=self.io.notqut)
+        clrbtn.pack(side='right',padx=self.io.scfac/3)
+        self.aply.pack(side='right',padx=self.io.scfac/3)
         for i in range(8): preemp[i].pack(fill='x',pady=self.io.scfac/3)
         preemp[8].pack(fill='x',side='bottom',pady=self.io.scfac/3)
 class Pro:
@@ -1583,9 +1621,10 @@ class Pro:
         self.pullst=zeros(shape=(38000,4),dtype=int); self.prolst=zeros(38000)
     def pro(self)->None:
         '''construct window'''
-        self.relnm='抽卡概率计算'
-        if self.io.note.opened(self.relnm): return
-        pro,proemp=self.io.notemp(self.relnm,6); limit=[1000000,5000,89,3,1]
+        relnm='抽卡概率计算'
+        if self.io.note.opened(relnm): return
+        pro,proemp=self.io.notemp(6)
+        self.io.note.add(pro,relnm); limit=[1000000,5000,89,3,1]
         self.provars=[tkinter.StringVar(value=0) for i in range(5)]
         probtx=['原石数','粉球数','垫池数(0-89)','已经连歪数(0-3)','是否大保底(0/1)']
         for i in range(5):
@@ -1594,7 +1633,7 @@ class Pro:
             prosp=ttk.Spinbox(proemp[i],width=40,textvariable=self.provars[i],from_=0,to=limit[i])
             prosp.pack(side='right',padx=self.io.scfac/3)
         self.procfm=ttk.Button(proemp[5],text='确认',command=self.prochk)
-        probtn=ttk.Button(proemp[5],text='退出',command=lambda: self.io.note.fclose(self.io.note.now))
+        probtn=ttk.Button(proemp[5],text='退出',command=self.io.notqut)
         probtn.pack(side='right',padx=self.io.scfac/3)
         self.procfm.pack(side='right',padx=self.io.scfac/3)
         for i in range(5): proemp[i].pack(fill='x',pady=self.io.scfac/3)
@@ -1608,12 +1647,12 @@ class Pro:
         for i in range(pbl):
             for j in range(lpro):
                 upnum,put,false_up,true_up=self.pullst[j]; lstpro=self.prolst[j]
-                upnum=min(upnum,50); putpro=self.io.data['pro_lst5'][put]
+                upnum=min(upnum,50); putpro=self.io.data['lst5'][put]
                 tu_pro=self.io.data['tu_lst'][false_up]
                 self.protmp[upnum,put+1,false_up,true_up]+=lstpro*(1-putpro)
                 if true_up: self.protmp[upnum+1,0,false_up,0]+=lstpro*putpro
                 else:
-                    self.protmp[upnum,0,false_up+1,1]+=lstpro*putpro*(1 - tu_pro)
+                    self.protmp[upnum,0,false_up+1,1]+=lstpro*putpro*(1-tu_pro)
                     self.protmp[upnum+1,0,0,0]+=lstpro*putpro*tu_pro
             lpro=0
             for j in range(52):
@@ -1648,32 +1687,39 @@ class Pro:
         self.io.thr(self.procal,args)()
 class Pul:
     '''pull for tools for Genshin Impact'''
-    def __init__(self,io:Fabits)->None: self.io=io
+    def __init__(self,io:Fabits)->None:
+        '''set initialize'''
+        self.io=io; self.bgf=[]; self.io.wm.bind('<<style>>',self.bgs,'+')
+    def bgs(self,*args)->None:
+        '''set widget style'''
+        for i in self.bgf: i()
+    def clrbgf(self)->None: self.bgf=[]
     def pul(self)->None:
         '''construct window'''
-        self.relnm='抽卡模拟器'
-        if self.io.note.opened(self.relnm): return
-        pul,pulwm=self.io.notemp(self.relnm,1); self.res={}
+        relnm='抽卡模拟器'
+        if self.io.note.opened(relnm): return
+        pul,pulwm=self.io.notemp(1)
+        self.io.note.add(pul,relnm,1,self); self.res={}
         pulemp=[ttk.Frame(pulwm[0]) for i in range(5)]
         pultx=['五星UP','四星UP1','四星UP2','四星UP3']
         pulmnu={'祈愿(W)':{'确认':self.pulchk,'祈愿一次':lambda: self.pulcal(1),
                 '祈愿十次':lambda: self.pulcal(10)},'选项(O)':{'清空':self.pulclr,
-                '重置':self.pulset,'退出':lambda: self.io.note.fclose(self.io.note.now)}}
+                '重置':self.pulset,'退出':self.io.notqut}}
         puldtx=['ups5','ups4','fups5','wpns5','wpns4','wpns3']
         self.ups,self.put5,self.put4,self.true_up5,self.true_up4,self.fu=['']*4,0,0,0,0,0
         self.pulvar=[tkinter.StringVar() for i in range(4)]
         ups5,ups4=self.io.data['ups5'],self.io.data['ups4']
-        self.menu=Navigation(pul,self.io.bgin,self.io.fg,self.io.bg)
-        fnt=lambda fsz: (self.io.fnt,self.io.size(fsz),'bold')
+        self.menu=Navigation(pul,self.io)
         for i in pulmnu:
-            self.menu.add_cascade(i,font=fnt(0.36),padx=self.io.scfac/3,pady=self.io.scfac/3)
+            self.menu.add_cascade(i,0.36,padx=self.io.scfac/3,pady=self.io.scfac/3)
             for j in pulmnu[i]:
-                self.menu.add_command(j,fnt(0.3),pulmnu[i][j],2*self.io.scfac,self.io.scfac/6)
+                self.menu.add_command(j,0.3,pulmnu[i][j],2*self.io.scfac,self.io.scfac/6)
         for i in range(4):
             pullb=ttk.Label(pulemp[i],text=pultx[i])
             if i: pulopt=ttk.OptionMenu(pulemp[i],self.pulvar[i],ups4[0],*ups4)
             else: pulopt=ttk.OptionMenu(pulemp[i],self.pulvar[i],ups5[0],*ups5)
             pulopt['menu'].configure(bg=self.io.bg,fg=self.io.fg)
+            self.bgf+=[lambda mnu=pulopt['menu']: mnu.configure(bg=self.io.bg,fg=self.io.fg)]
             pulopt.config(width=20); pullb.pack(side='left',padx=self.io.scfac/3)
             pulopt.pack(side='right',padx=self.io.scfac/3)
         self.pullb=ttk.Label(pulemp[4],text='祈愿结果'); self.pullb.pack(expand=1)
@@ -1695,7 +1741,7 @@ class Pul:
         if not self.ups[0]: return
         for i in range(num):
             kndpro,trupro=random.random(),random.random()
-            if kndpro<=self.io.data['pro_lst5'][self.put5]:
+            if kndpro<=self.io.data['lst5'][self.put5]:
                 if self.true_up5:
                     self.io.show(self.io.csl,'yellow',self.ups[0])
                     self.true_up5=0; self.puladd(5,self.ups[0])
@@ -1707,7 +1753,7 @@ class Pul:
                     self.io.show(self.io.csl,'yellow',fal_up5); self.io.show(self.io.csl,'red','歪')
                     self.true_up5,self.fu=1,self.fu+1; self.puladd(5,fal_up5)
                 self.put5,self.put4=0,self.put4+1
-            elif kndpro<=self.io.data['pro_lst5'][self.put5]+self.io.data['pro_lst4'][self.put4]:
+            elif kndpro<=self.io.data['lst5'][self.put5]+self.io.data['lst4'][self.put4]:
                 if trupro<=0.5 or self.true_up4:
                     up4=random.choice(self.ups[1:])
                     self.io.show(self.io.csl,'purple',up4)
@@ -1743,7 +1789,13 @@ class Pul:
         self.pulclr(); self.pullb.config(text='祈愿结果')
 class Rename:
     '''file rename tool'''
-    def __init__(self,io:Fabits)->None: self.io=io
+    def __init__(self,io:Fabits)->None:
+        '''set initialize'''
+        self.io=io; self.bgf=[]; self.io.wm.bind('<<style>>',self.bgs,'+')
+    def bgs(self,*args)->None:
+        '''set widget style'''
+        for i in self.bgf: i()
+    def clrbgf(self)->None: self.bgf=[]
     def recmd(self,knd:int)->None:
         '''command for file rename tool'''
         if knd==0:
@@ -1759,13 +1811,12 @@ class Rename:
             self.revars[1].set(pth)
     def rename(self)->None:
         '''construct window'''
-        self.relnm='批量重命名'
-        if self.io.note.opened(self.relnm): return
-        re,reemp=self.io.notemp(self.relnm,4)
+        relnm='批量重命名'
+        if self.io.note.opened(relnm): return
+        re,reemp=self.io.notemp(4); self.io.note.add(re,relnm,1,self)
         revar=tkinter.StringVar(); self.revars=[tkinter.StringVar() for i in range(3)]
         retx,rebtx=['文件后缀','目录','命名模板'],['重命名','预览','退出']
-        recmds=[self.io.thr(self.renm),self.io.thr(self.renm,1),
-               lambda: self.io.note.fclose(self.io.note.now)]
+        recmds=[self.io.thr(self.renm),self.io.thr(self.renm,1),self.io.notqut]
         refun=lambda *args: self.revars[2].set(self.io.data['tmplts'][int(revar.get()[0])-1])
         for i in range(3):
             relb=ttk.Label(reemp[i],text=retx[i],width=16)
@@ -1779,6 +1830,7 @@ class Rename:
                 tmplt=self.io.data['tmplt']
                 reopt=ttk.OptionMenu(reemp[2],revar,tmplt[0],*tmplt)
                 reopt['menu'].configure(bg=self.io.bg,fg=self.io.fg)
+                self.bgf+=[lambda mnu=reopt['menu']: mnu.configure(bg=self.io.bg,fg=self.io.fg)]
                 reopt.config(width=13); revar.trace('w',refun)
                 reopt.pack(side='right',padx=self.io.scfac/3)
             reet.pack(side='right',padx=self.io.scfac/3)
@@ -1832,7 +1884,7 @@ class Rename:
                     self.io.thrupd(i+1,f'{names[i][0]} -> {names[i][1]}','cyan')
                 except: cnt+=1
             self.io.thrqut()
-            if cnt: self.io.mb('w','o','重命名',self.io.data['failmsg'].format(lnms-cnt,cnt))
+            if cnt: self.io.mb('w','o','重命名',self.io.data['flmsg'].format(lnms-cnt,cnt))
         self.io.thrshw('red','进程已结束')
         self.io.thrshw('purple','>>>')
 class Ring:
@@ -1876,13 +1928,15 @@ class Rome:
         self.io.thrshw('purple','>>>')
 class Toggle(tkinter.Canvas):
     '''modern widget with dynamic animation'''
-    def __init__(self,master,wth:float,hgt:float,bg:str,var:tkinter.BooleanVar,cmd=None)->None:
+    _count=0
+    def __init__(self,master:ttk.Frame,io:Fabits,var:tkinter.BooleanVar,cmd=None)->None:
         '''initialize toggle widget'''
-        super().__init__(master,width=wth+1,height=hgt+1,bg=bg,highlightthickness=0)
+        wth,hgt=2*io.scfac,io.scfac
+        super().__init__(master,width=wth+1,height=hgt+1,bg=io.bgin,highlightthickness=0)
         self.wth,self.hgt,self.rad=wth,hgt,0.375*hgt
         self.sc,self.on,self.off='#ffffff','#4CAF50','#848484'
         self.var,self.cmd,self.items=var,cmd,[None]*4
-        self.onani,self.state,self.fx=0,self.var.get(),lambda x: (x-1)**3+1
+        self.onani,self.state,self.fx=0,self.var.get(),lambda x: 1-(1-x)**3
         self.draw(self.state); self.bind('<ButtonRelease-1>',self.toggle)
     def ani(self,crd)->None:
         '''play animation for toggle switch move'''
@@ -1891,7 +1945,7 @@ class Toggle(tkinter.Canvas):
         scx,scy=self.hgt/2-self.rad,self.hgt/2+self.rad
         if self.state: self.coords(self.items[3],cd-self.rad,scx,cd+self.rad,scy)
         else: self.coords(self.items[3],self.wth-cd-self.rad,scx,self.wth-cd+self.rad,scy)
-        self.after(20,self.ani,crd)
+        self.after(15,self.ani,crd)
     def draw(self,state:int)->None:
         '''begin draw toggle'''
         par,bg=self.wth-self.hgt,self.on if state else self.off
@@ -1903,7 +1957,7 @@ class Toggle(tkinter.Canvas):
         self.items[2]=self.create_rectangle(self.hgt/2,0,self.wth-self.hgt/2,
                                             self.hgt+1,fill=bg,outline='')
         if state: self.items[3]=self.create_oval(scx+par,scx,scy+par,scy,fill=self.sc,outline='')
-        else: self.items[3]=self.create_oval(scx,scx,scy,scy,fill=self.sc,outline='')
+        else: self.items[3]=super().create_oval(scx,scx,scy,scy,fill=self.sc,outline='')
     def toggle(self,*args)->None:
         '''prepare to play animation'''
         if self.onani: return
@@ -1915,7 +1969,13 @@ class Toggle(tkinter.Canvas):
         self.after(0,self.ani,crd)
 class Txmng:
     '''text manager'''
-    def __init__(self,io:Fabits)->None: self.io=io
+    def __init__(self,io:Fabits)->None:
+        '''set initialize'''
+        self.io=io; self.bgf=[]; self.io.wm.bind('<<style>>',self.bgs,'+')
+    def bgs(self,*args)->None:
+        '''set widget style'''
+        for i in self.bgf: i()
+    def clrbgf(self)->None: self.bgf=[]
     def encucd(self,tx:str)->str:
         '''unicode encoder for text manager'''
         ltx=len(tx); res=['']*ltx
@@ -1956,15 +2016,15 @@ class Txmng:
         self.io.thr(self.txpre,tx,new,num,funknd)()
     def txmng(self)->None:
         '''construct window'''
-        self.relnm='文本处理'
-        if self.io.note.opened(self.relnm): return
-        tx,txemp=self.io.notemp(self.relnm,7)
+        relnm='文本处理'
+        if self.io.note.opened(relnm): return
+        tx,txemp=self.io.notemp(7); self.io.note.add(tx,relnm,1,self)
         self.txet=[[ttk.Entry]*2,[ttk.Entry]*2]
         self.txvars=[tkinter.IntVar(value=0) for i in range(2)]
         self.txfun=tkinter.StringVar(); txbtx=['生成','退出']
         txtx=['打开方式','文本输入','文件打开','保存方式','文本输出','文件保存']
         txfun=['1.编unicode','2.生成组合字符','3.解unicode','4.文本加解密']
-        txcmd=[self.txinp,lambda: self.io.note.fclose(self.io.note.now)]
+        txcmd=[self.txinp,self.io.notqut]
         for i in range(2):
             txlb=ttk.Label(txemp[3*i],text=txtx[3*i])
             txlb.pack(side='left',padx=self.io.scfac/3)
@@ -1975,13 +2035,14 @@ class Txmng:
                 txbtn.pack(side='left',padx=self.io.scfac/3)
                 self.txet[i][j]=ttk.Entry(txemp[3*i+j+1],width=50)
                 if j: btx='浏览'; cmd=lambda knd=i,idx=j: self.txcmd(knd,idx)
-                else: btx='全选'; cmd=lambda knd=i,idx=j: self.io.scl(tag=self.txet[knd][idx])
+                else: btx='全选'; cmd=lambda tag=self.txet[i][j]: tag.selection_range(0,'end')
                 txbtn=ttk.Button(txemp[3*i+j+1],text=btx,command=cmd)
                 txbtn.pack(side='right',padx=self.io.scfac/3)
                 self.txet[i][j].pack(side='right',padx=self.io.scfac/3)
             self.txet[i][1].config(state='disabled')
         txopt=ttk.OptionMenu(txemp[6],self.txfun,txfun[0],*txfun)
         txopt['menu'].configure(bg=self.io.bg,fg=self.io.fg)
+        self.bgf+=[lambda: txopt['menu'].configure(bg=self.io.bg,fg=self.io.fg)]
         for i in range(1,-1,-1):
             txbtn=ttk.Button(txemp[6],text=txbtx[i],command=txcmd[i])
             txbtn.pack(side='right',padx=self.io.scfac/3)
@@ -2033,4 +2094,6 @@ class Update:
                 webbrowser.open(self.io.data['proj']+'/releases/latest')
         except:
             if self.io.mb('w','yn','无法连接服务器','是否重试?')=='yes': self.update()
-if __name__=='__main__': multiprocessing.freeze_support(); Api.dpi(); Fabits()
+if __name__=='__main__':
+    multiprocessing.freeze_support()
+    Api.dpi(); Fabits().run()
